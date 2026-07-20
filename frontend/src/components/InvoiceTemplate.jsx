@@ -127,22 +127,6 @@ export default function InvoiceTemplate({ invoice, innerRef, className = "" }) {
             </div>
           </div>
 
-          {/* Consignee */}
-          <div className="p-2 border-b border-black">
-            <div>Consignee (Ship to)</div>
-            <div className="font-bold text-sm">{inv.consignee_name || inv.buyer_name || ""}</div>
-            {(inv.consignee_address || inv.buyer_address) && (
-              <div className="whitespace-pre-line">{inv.consignee_address || inv.buyer_address}</div>
-            )}
-            {(inv.consignee_gstin || inv.buyer_gstin) && (
-              <div>GSTIN/UIN: {inv.consignee_gstin || inv.buyer_gstin}</div>
-            )}
-            <div>
-              State Name : {inv.consignee_state_name || inv.buyer_state_name || ""}, Code :{" "}
-              {inv.consignee_state_code || inv.buyer_state_code || ""}
-            </div>
-          </div>
-
           {/* Buyer */}
           <div className="p-2 flex-1">
             <div>Buyer (Bill to)</div>
