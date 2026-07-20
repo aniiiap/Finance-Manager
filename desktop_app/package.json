@@ -1,0 +1,27 @@
+{
+  "name": "finance-manager",
+  "version": "1.0.0",
+  "description": "Finance Manager Desktop Application",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder -w"
+  },
+  "author": "Anish",
+  "license": "ISC",
+  "build": {
+    "appId": "com.financemanager.app",
+    "productName": "Finance Manager",
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "icon.png"
+    }
+  },
+  "devDependencies": {
+    "electron": "^30.0.0",
+    "electron-builder": "^24.13.3"
+  }
+}

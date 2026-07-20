@@ -80,8 +80,8 @@ export default function Layout() {
       <aside className={`fixed inset-y-0 left-0 z-30 w-64 bg-white border-r border-slate-200 flex flex-col transform transition-transform duration-200 ease-in-out sm:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="h-14 sm:h-16 flex items-center px-6 border-b border-slate-200 justify-between">
           <div className="flex items-center">
-            <Building2 className="w-6 h-6 mr-2 text-slate-900" />
-            <span className="text-lg font-bold text-slate-900">FinManager</span>
+            <img src="/logo.png" alt="FinManager" className="w-16 h-16 -mr-1 -ml-2" />
+            <span className="text-xl font-bold text-slate-900">FinManager</span>
           </div>
           <button onClick={closeSidebar} className="sm:hidden text-slate-500 hover:text-slate-700">
             <X className="w-5 h-5" />
@@ -221,8 +221,9 @@ export default function Layout() {
           >
             <Menu className="w-6 h-6" />
           </button>
-          <div className="flex-1 font-semibold text-slate-900 sm:hidden">
-            FinManager
+          <div className="flex-1 flex items-center font-semibold text-slate-900 sm:hidden">
+            <img src="/logo.png" alt="FinManager" className="w-14 h-14 -mr-1 -ml-2" />
+            <span className="text-lg">FinManager</span>
           </div>
           <div className="flex-1 hidden sm:block">
              {/* Desktop breadcrumbs/title space */}
