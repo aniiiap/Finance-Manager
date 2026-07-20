@@ -17,8 +17,8 @@ function createWindow() {
   // Load the live Vercel website
   mainWindow.loadURL('https://finance-manager-ashen.vercel.app');
 
-  // Open the DevTools to see why the screen is blank
-  mainWindow.webContents.openDevTools();
+  // DevTools are intentionally disabled for production
+  // mainWindow.webContents.openDevTools();
 
   // Open external links in default browser instead of the app window
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
