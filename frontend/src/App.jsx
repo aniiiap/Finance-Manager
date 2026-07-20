@@ -14,6 +14,7 @@ import Sales from './pages/Sales'
 import Login from './pages/Login'
 import SetPassword from './pages/SetPassword'
 import AdminSettings from './pages/AdminSettings'
+import Settings from './pages/Settings'
 import SuperAdminDashboard from './pages/SuperAdminDashboard'
 import { DataProvider } from './context/DataContext'
 import { AuthProvider, useAuth } from './context/AuthContext'
@@ -70,6 +71,7 @@ function App() {
                   <Route path="stock" element={<ProtectedRoute requireClient={true} requireModule="Stock"><Stock /></ProtectedRoute>} />
                   <Route path="reports" element={<ProtectedRoute requireClient={true} requireModule="Reports"><Reports /></ProtectedRoute>} />
                   <Route path="categories" element={<ProtectedRoute requireClient={true} requireModule="Categories"><Categories /></ProtectedRoute>} />
+                  <Route path="settings" element={<ProtectedRoute requireAdmin={true} requireClient={true}><Settings /></ProtectedRoute>} />
                   <Route path="admin" element={<ProtectedRoute requireAdmin={true} requireClient={true}><AdminSettings /></ProtectedRoute>} />
                   
                   {/* Super Admin Route */}

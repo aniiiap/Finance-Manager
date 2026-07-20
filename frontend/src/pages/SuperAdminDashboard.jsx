@@ -16,6 +16,10 @@ export default function SuperAdminDashboard() {
   
   const [companies, setCompanies] = useState([])
   const [createdCredentials, setCreatedCredentials] = useState(null)
+  
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [companyToEdit, setCompanyToEdit] = useState(null)
+  const [editError, setEditError] = useState("")
 
   // Fetch Companies on load
   useEffect(() => {
@@ -83,6 +87,42 @@ export default function SuperAdminDashboard() {
     }
   }
 
+  const handleEditCompany = async (e) => {
+    e.preventDefault()
+    setEditError("")
+    
+    const formData = new FormData(e.target)
+    const payload = {
+      company_name: formData.get('company_name'),
+      contact_name: formData.get('contact_name'),
+      contact_email: formData.get('contact_email'),
+      contact_phone: formData.get('contact_phone')
+    }
+    
+    try {
+      const res = await apiFetch(`/api/data/companies/${companyToEdit.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      })
+      
+      if (res.ok) {
+        const refreshed = await apiFetch('/api/data/companies')
+        const refreshedData = await refreshed.json()
+        setCompanies(refreshedData)
+        setIsEditModalOpen(false)
+        setCompanyToEdit(null)
+      } else {
+        const data = await res.json()
+        setEditError(data.error || "Failed to update company")
+      }
+    } catch (err) {
+      setEditError("Network error connecting to backend")
+    }
+  }
+
   const handleToggleStatus = async (companyId, currentStatus) => {
     const newStatus = currentStatus === 'Suspended' ? 'Active' : 'Suspended'
     try {
@@ -136,6 +176,7 @@ export default function SuperAdminDashboard() {
                 <TableHead>Company Name</TableHead>
                 <TableHead>Primary Contact</TableHead>
                 <TableHead>Admin Email</TableHead>
+                <TableHead>Admin Phone</TableHead>
                 <TableHead>Active Users</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Platform Actions</TableHead>
@@ -145,20 +186,32 @@ export default function SuperAdminDashboard() {
               {isLoading ? (
                 <TableRow><TableCell colSpan={6} className="text-center py-4">Loading...</TableCell></TableRow>
               ) : companies.length === 0 ? (
-                <TableRow><TableCell colSpan={6} className="text-center py-4 text-slate-500">No client companies onboarded yet.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={7} className="text-center py-4 text-slate-500">No client companies onboarded yet.</TableCell></TableRow>
               ) : (
                 companies.map((c) => (
                   <TableRow key={c.id}>
                     <TableCell className="font-bold text-slate-900">{c.name}</TableCell>
                     <TableCell>{c.contact_name}</TableCell>
                     <TableCell className="text-slate-500">{c.contact_email}</TableCell>
+                    <TableCell className="text-slate-500">{c.contact_phone || 'N/A'}</TableCell>
                     <TableCell>{c.users_count} users</TableCell>
                     <TableCell>
                       <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${c.status === 'Suspended' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
                         {c.status || 'Active'}
                       </span>
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right flex items-center justify-end gap-2">
+                      <Button
+                        onClick={() => {
+                          setCompanyToEdit(c)
+                          setIsEditModalOpen(true)
+                        }}
+                        variant="outline"
+                        size="sm"
+                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                      >
+                        Edit
+                      </Button>
                       <Button 
                         onClick={() => handleToggleStatus(c.id, c.status || 'Active')}
                         variant="outline" 
@@ -203,6 +256,34 @@ export default function SuperAdminDashboard() {
           <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
             <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>Cancel</Button>
             <Button type="submit" className="bg-purple-700 hover:bg-purple-800 text-white">Create Company</Button>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal isOpen={isEditModalOpen} onClose={() => { setIsEditModalOpen(false); setCompanyToEdit(null); }} title="Edit Client Company">
+        <form onSubmit={handleEditCompany} className="space-y-4">
+          {editError && <div className="text-red-600 text-sm">{editError}</div>}
+          <div>
+            <label className="block text-sm font-medium mb-1">Company Name</label>
+            <input name="company_name" defaultValue={companyToEdit?.name} required className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-600" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Primary Contact Name</label>
+            <input name="contact_name" defaultValue={companyToEdit?.contact_name} required className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-600" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Admin Email (Login ID)</label>
+            <input name="contact_email" type="email" defaultValue={companyToEdit?.contact_email} required className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-600" />
+            <p className="text-xs text-amber-600 mt-1">Warning: Changing this email will change the admin's login credentials.</p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Admin Phone Number</label>
+            <input name="contact_phone" type="tel" defaultValue={companyToEdit?.contact_phone} required className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-600" />
+          </div>
+          
+          <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
+            <Button type="button" variant="outline" onClick={() => { setIsEditModalOpen(false); setCompanyToEdit(null); }}>Cancel</Button>
+            <Button type="submit" className="bg-purple-700 hover:bg-purple-800 text-white">Save Changes</Button>
           </div>
         </form>
       </Modal>

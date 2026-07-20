@@ -22,8 +22,8 @@ export const DataProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   
   useEffect(() => {
-    // Only fetch if standard user is logged in
-    if (token && user) {
+    // Only fetch if standard user is logged in and not Super Admin
+    if (token && user && user.role !== 'SUPER_ADMIN') {
       fetchData();
     } else {
       setLoading(false);

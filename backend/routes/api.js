@@ -384,7 +384,8 @@ router.get('/companies', verifyToken, async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT c.*, 
-        (SELECT COUNT(*) FROM users u WHERE u.company_id = c.id) as users_count
+        (SELECT COUNT(*) FROM users u WHERE u.company_id = c.id) as users_count,
+        (SELECT phone FROM users u WHERE u.company_id = c.id AND u.role = 'ADMIN' LIMIT 1) as contact_phone
       FROM companies c
       ORDER BY c.created_at DESC
     `);
@@ -403,6 +404,36 @@ router.put('/companies/:id/status', verifyToken, async (req, res) => {
     res.json({ success: true, status });
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
+  }
+});
+
+router.put('/companies/:id', verifyToken, async (req, res) => {
+  if (req.user.role !== 'SUPER_ADMIN') return res.status(403).json({ error: 'Forbidden' });
+  const client = await pool.connect();
+  try {
+    const { id } = req.params;
+    const { company_name, contact_name, contact_email, contact_phone } = req.body;
+    await client.query('BEGIN');
+    
+    // Update company details
+    await client.query(
+      'UPDATE companies SET name = $1, contact_name = $2, contact_email = $3 WHERE id = $4',
+      [company_name, contact_name, contact_email, id]
+    );
+
+    // Also update the main admin user's name, email, and phone for this company so they don't lose login access
+    await client.query(
+      "UPDATE users SET name = $1, email = $2, phone = $3 WHERE company_id = $4 AND role = 'ADMIN'",
+      [contact_name, contact_email, contact_phone, id]
+    );
+
+    await client.query('COMMIT');
+    res.json({ success: true });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    res.status(500).json({ error: 'Server error' });
+  } finally {
+    client.release();
   }
 });
 
