@@ -231,6 +231,11 @@ export default function InvoiceTemplate({ invoice, innerRef, className = "" }) {
               Goods and Services
             </th>
             <th className="border-r border-black w-20 p-1 font-normal">HSN/SAC</th>
+            <th className="border-r border-black w-16 p-1 font-normal">
+              GST
+              <br />
+              Rate
+            </th>
             <th className="border-r border-black w-20 p-1 font-normal">Quantity</th>
             <th className="border-r border-black w-20 p-1 font-normal">Rate</th>
             <th className="border-r border-black w-10 p-1 font-normal">per</th>
@@ -249,6 +254,9 @@ export default function InvoiceTemplate({ invoice, innerRef, className = "" }) {
               <td className="border-r border-black text-center p-1 border-b-transparent border-t-transparent">
                 {item.hsn_sac || ""}
               </td>
+              <td className="border-r border-black text-center p-1 border-b-transparent border-t-transparent">
+                {item.gst_rate ? `${parseFloat(item.gst_rate)} %` : ""}
+              </td>
               <td className="border-r border-black text-right p-1 font-bold border-b-transparent border-t-transparent">
                 {item.quantity ? `${parseFloat(item.quantity).toFixed(2)} ${item.per || ""}` : ""}
               </td>
@@ -265,16 +273,18 @@ export default function InvoiceTemplate({ invoice, innerRef, className = "" }) {
           ))}
 
           <tr className="h-24">
-            <td className="border-r border-black" />
-            <td className="border-r border-black" />
-            <td className="border-r border-black" />
-            <td className="border-r border-black" />
-            <td className="border-r border-black" />
-            <td className="border-r border-black" />
-            <td />
+            <td className="border-r border-black border-b-transparent border-t-transparent" />
+            <td className="border-r border-black border-b-transparent border-t-transparent" />
+            <td className="border-r border-black border-b-transparent border-t-transparent" />
+            <td className="border-r border-black border-b-transparent border-t-transparent" />
+            <td className="border-r border-black border-b-transparent border-t-transparent" />
+            <td className="border-r border-black border-b-transparent border-t-transparent" />
+            <td className="border-r border-black border-b-transparent border-t-transparent" />
+            <td className="border-b-transparent border-t-transparent" />
           </tr>
 
           <tr>
+            <td className="border-r border-black border-t-transparent" />
             <td className="border-r border-black border-t-transparent" />
             <td className="border-r border-black border-t-transparent" />
             <td className="border-r border-black border-t-transparent" />
@@ -296,6 +306,7 @@ export default function InvoiceTemplate({ invoice, innerRef, className = "" }) {
               <td className="border-r border-black border-t-transparent border-b-transparent" />
               <td className="border-r border-black border-t-transparent border-b-transparent" />
               <td className="border-r border-black border-t-transparent border-b-transparent" />
+              <td className="border-r border-black border-t-transparent border-b-transparent" />
               <td className="text-right p-1 border-t-transparent border-b-transparent">
                 {fmt(inv.total_cgst)}
               </td>
@@ -307,6 +318,7 @@ export default function InvoiceTemplate({ invoice, innerRef, className = "" }) {
               <td className="border-r border-black text-right p-1 pr-6 italic border-t-transparent border-b-transparent">
                 Output Sgst
               </td>
+              <td className="border-r border-black border-t-transparent border-b-transparent" />
               <td className="border-r border-black border-t-transparent border-b-transparent" />
               <td className="border-r border-black border-t-transparent border-b-transparent" />
               <td className="border-r border-black border-t-transparent border-b-transparent" />
@@ -326,6 +338,7 @@ export default function InvoiceTemplate({ invoice, innerRef, className = "" }) {
               <td className="border-r border-black border-t-transparent border-b-transparent" />
               <td className="border-r border-black border-t-transparent border-b-transparent" />
               <td className="border-r border-black border-t-transparent border-b-transparent" />
+              <td className="border-r border-black border-t-transparent border-b-transparent" />
               <td className="text-right p-1 border-t-transparent border-b-transparent">
                 {fmt(inv.round_off)}
               </td>
@@ -333,7 +346,7 @@ export default function InvoiceTemplate({ invoice, innerRef, className = "" }) {
           )}
 
           <tr className="border-t border-black font-bold">
-            <td colSpan={3} className="border-r border-black text-right p-1 pr-4">
+            <td colSpan={4} className="border-r border-black text-right p-1 pr-4">
               Total
             </td>
             <td className="border-r border-black p-1 text-center">
@@ -345,41 +358,43 @@ export default function InvoiceTemplate({ invoice, innerRef, className = "" }) {
         </tbody>
       </table>
 
-      <div className="border-b border-black p-1 px-2">
-        <div>Amount Chargeable (in words)</div>
-        <div className="font-bold">{inv.amount_in_words}</div>
-        <div className="text-right italic -mt-4 pr-1">E. &amp; O.E</div>
+      <div className="border-b border-black p-1 px-2 flex justify-between items-end">
+        <div>
+          <div>Amount Chargeable (in words)</div>
+          <div className="font-bold">{inv.amount_in_words}</div>
+        </div>
+        <div className="italic pr-1">E. &amp; O.E</div>
       </div>
 
       {Object.keys(taxGroups).length > 0 && (
         <table className="w-full border-collapse border-b border-black text-center table-fixed">
           <thead>
-            <tr className="border-b border-black">
-              <th className="border-r border-black p-1 font-normal w-[25%]" rowSpan={2}>
+            <tr>
+              <th className="border-r border-b border-black p-1 font-normal w-[25%]" rowSpan={2}>
                 HSN/SAC
               </th>
-              <th className="border-r border-black p-1 font-normal w-[15%]" rowSpan={2}>
+              <th className="border-r border-b border-black p-1 font-normal w-[15%]" rowSpan={2}>
                 Taxable
                 <br />
                 Value
               </th>
-              <th className="border-r border-black p-1 font-normal w-[25%]" colSpan={2}>
+              <th className="border-r border-b border-black p-1 font-normal w-[25%]" colSpan={2}>
                 Central Tax
               </th>
-              <th className="border-r border-black p-1 font-normal w-[25%]" colSpan={2}>
+              <th className="border-r border-b border-black p-1 font-normal w-[25%]" colSpan={2}>
                 State Tax
               </th>
-              <th className="p-1 font-normal w-[10%]" rowSpan={2}>
+              <th className="border-b border-black p-1 font-normal w-[10%]" rowSpan={2}>
                 Total
                 <br />
                 Tax Amount
               </th>
             </tr>
-            <tr className="border-b border-black">
-              <th className="border-r border-t border-black p-1 font-normal">Rate</th>
-              <th className="border-r border-t border-black p-1 font-normal">Amount</th>
-              <th className="border-r border-t border-black p-1 font-normal">Rate</th>
-              <th className="border-r border-t border-black p-1 font-normal">Amount</th>
+            <tr>
+              <th className="border-r border-b border-black p-1 font-normal">Rate</th>
+              <th className="border-r border-b border-black p-1 font-normal">Amount</th>
+              <th className="border-r border-b border-black p-1 font-normal">Rate</th>
+              <th className="border-r border-b border-black p-1 font-normal">Amount</th>
             </tr>
           </thead>
           <tbody>
