@@ -10,6 +10,8 @@ export default function RecycleBin() {
   const [loading, setLoading] = useState(true);
   const [restoringId, setRestoringId] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
+  const [restoringAllType, setRestoringAllType] = useState(null);
+  const [deletingAllType, setDeletingAllType] = useState(null);
 
   useEffect(() => {
     if (user?.role === 'ADMIN') {
@@ -79,6 +81,42 @@ export default function RecycleBin() {
       alert('Error deleting item.');
     } finally {
       setDeletingId(null);
+    }
+  };
+
+  const handleRestoreAll = async (type, items) => {
+    if (!window.confirm(`Are you sure you want to restore all ${items.length} items in this category?`)) return;
+    setRestoringAllType(type);
+    try {
+      const promises = items.map(item => fetch(`${import.meta.env.VITE_API_URL}/api/recycle-bin/restore/${type}/${item.id}`, {
+        method: 'PUT',
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      }));
+      await Promise.all(promises);
+      setDeletedItems(prev => prev.filter(item => item._type !== type));
+    } catch (err) {
+      console.error(err);
+      alert('Error restoring items.');
+    } finally {
+      setRestoringAllType(null);
+    }
+  };
+
+  const handleDeleteAll = async (type, items) => {
+    if (!window.confirm(`WARNING: Are you sure you want to PERMANENTLY delete all ${items.length} items? This CANNOT be undone.`)) return;
+    setDeletingAllType(type);
+    try {
+      const promises = items.map(item => fetch(`${import.meta.env.VITE_API_URL}/api/recycle-bin/permanent/${type}/${item.id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      }));
+      await Promise.all(promises);
+      setDeletedItems(prev => prev.filter(item => item._type !== type));
+    } catch (err) {
+      console.error(err);
+      alert('Error deleting items.');
+    } finally {
+      setDeletingAllType(null);
     }
   };
 
@@ -153,11 +191,33 @@ export default function RecycleBin() {
       ) : (
         Object.keys(groupedItems).map(type => (
           <Card key={type} className="mb-6 shadow-sm border-t-4 border-t-red-500">
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="capitalize flex items-center">
                 <Trash2 className="w-5 h-5 mr-2 text-red-500" />
                 {getFriendlyPluralName(type).replace(/ss$/, 's')} ({groupedItems[type].length})
               </CardTitle>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="text-green-600 border-green-600 hover:bg-green-50"
+                  onClick={() => handleRestoreAll(type, groupedItems[type])}
+                  disabled={restoringAllType === type || deletingAllType === type}
+                >
+                  <RefreshCcw className={`w-4 h-4 mr-2 ${restoringAllType === type ? 'animate-spin' : ''}`} />
+                  {restoringAllType === type ? 'Restoring All...' : 'Restore All'}
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="text-red-600 border-red-600 hover:bg-red-50"
+                  onClick={() => handleDeleteAll(type, groupedItems[type])}
+                  disabled={restoringAllType === type || deletingAllType === type}
+                >
+                  <Trash2 className={`w-4 h-4 mr-2 ${deletingAllType === type ? 'animate-bounce' : ''}`} />
+                  {deletingAllType === type ? 'Deleting All...' : 'Delete All'}
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="rounded-md border overflow-hidden">

@@ -508,7 +508,7 @@ export const DataProvider = ({ children }) => {
     try {
       const res = await apiFetch(`/api/data/inventory/transactions/${id}`, { method: 'DELETE' });
       if (res.ok) {
-        fetchData();
+        setInventoryTransactions(prev => prev.filter(t => t.id !== id));
         toast("Inventory transaction deleted!", "success");
       } else {
         toast("Failed to delete transaction", "error");

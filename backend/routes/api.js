@@ -498,7 +498,7 @@ router.get('/inventory/transactions', verifyToken, requireClient, requireModule(
         JOIN inventory_items ii ON it.item_id = ii.id
         LEFT JOIN projects p ON it.project_id = p.id
         LEFT JOIN user_project_access upa ON it.project_id = upa.project_id AND upa.user_id = $2
-        WHERE it.company_id = $1 AND (it.project_id IS NULL OR upa.user_id IS NOT NULL)
+        WHERE it.company_id = $1 AND (it.is_deleted = false OR it.is_deleted IS NULL) AND (it.project_id IS NULL OR upa.user_id IS NOT NULL)
         ORDER BY it.date DESC, it.created_at DESC
       `, [req.user.company_id, req.user.id]);
     } else {
@@ -507,7 +507,7 @@ router.get('/inventory/transactions', verifyToken, requireClient, requireModule(
         FROM inventory_transactions it
         JOIN inventory_items ii ON it.item_id = ii.id
         LEFT JOIN projects p ON it.project_id = p.id
-        WHERE it.company_id = $1
+        WHERE it.company_id = $1 AND (it.is_deleted = false OR it.is_deleted IS NULL)
         ORDER BY it.date DESC, it.created_at DESC
       `, [req.user.company_id]);
     }
