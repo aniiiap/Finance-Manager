@@ -19,6 +19,7 @@ export const DataProvider = ({ children }) => {
   const [companyInfo, setCompanyInfo] = useState(null);
   const [inventoryItems, setInventoryItems] = useState([]);
   const [inventoryTransactions, setInventoryTransactions] = useState([]);
+  const [letters, setLetters] = useState([]);
   const [loading, setLoading] = useState(true);
   
   useEffect(() => {
@@ -33,7 +34,7 @@ export const DataProvider = ({ children }) => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [projRes, txRes, catRes, clientsRes, usersRes, companyInfoRes, invItemsRes, invTxsRes] = await Promise.all([
+      const [projRes, txRes, catRes, clientsRes, usersRes, companyInfoRes, invItemsRes, invTxsRes, lettersRes] = await Promise.all([
         apiFetch('/api/data/projects'),
         apiFetch('/api/data/transactions'),
         apiFetch('/api/data/categories'),
@@ -41,7 +42,8 @@ export const DataProvider = ({ children }) => {
         user && user.role === 'ADMIN' ? apiFetch('/api/data/users').catch(() => ({ ok: false })) : Promise.resolve({ ok: false }),
         apiFetch('/api/data/company-info').catch(() => ({ ok: false })),
         apiFetch('/api/data/inventory/items').catch(() => ({ ok: false })),
-        apiFetch('/api/data/inventory/transactions').catch(() => ({ ok: false }))
+        apiFetch('/api/data/inventory/transactions').catch(() => ({ ok: false })),
+        apiFetch('/api/letters').catch(() => ({ ok: false }))
       ]);
       
       if (projRes.ok) {
@@ -93,6 +95,7 @@ export const DataProvider = ({ children }) => {
       if (companyInfoRes.ok) setCompanyInfo(await companyInfoRes.json());
       if (invItemsRes.ok) setInventoryItems(await invItemsRes.json());
       if (invTxsRes.ok) setInventoryTransactions(await invTxsRes.json());
+      if (lettersRes.ok) setLetters(await lettersRes.json());
     } catch (err) {
       console.error("Failed to fetch data", err);
     }
@@ -134,6 +137,29 @@ export const DataProvider = ({ children }) => {
     } catch (err) {
       console.error(err);
       toast("Error creating project", "error");
+    }
+  };
+
+  
+  const bulkDelete = async (table, ids) => {
+    try {
+      const res = await apiFetch(`/api/data/bulk-delete/${table}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids })
+      });
+      if (res.ok) {
+        fetchData();
+        toast(`Successfully deleted ${ids.length} items!`, "success");
+        return true;
+      } else {
+        toast("Failed to perform bulk delete", "error");
+        return false;
+      }
+    } catch (err) {
+      console.error(err);
+      toast("Error during bulk delete", "error");
+      return false;
     }
   };
 
@@ -183,6 +209,25 @@ export const DataProvider = ({ children }) => {
     } catch (err) {
       console.error(err);
       toast("Error adding category", "error");
+    }
+  };
+
+  const updateCategory = async (id, categoryData) => {
+    try {
+      const res = await apiFetch(`/api/data/categories/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(categoryData)
+      });
+      if (res.ok) {
+        fetchData();
+        toast("Category updated successfully!", "success");
+      } else {
+        toast("Failed to update category", "error");
+      }
+    } catch (err) {
+      console.error(err);
+      toast("Error updating category", "error");
     }
   };
 
@@ -355,6 +400,22 @@ export const DataProvider = ({ children }) => {
     }
   };
 
+  const updateInventoryItem = async (id, data) => {
+    try {
+      const res = await apiFetch(`/api/data/inventory/items/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data)
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setInventoryItems(prev => prev.map(i => i.id === id ? updated : i));
+        return updated;
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const addInventoryItem = async (item) => {
     try {
       const res = await apiFetch('/api/data/inventory/items', {
@@ -389,6 +450,22 @@ export const DataProvider = ({ children }) => {
     }
   };
 
+  const updateInventoryTransaction = async (id, data) => {
+    try {
+      const res = await apiFetch(`/api/data/inventory/transactions/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data)
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setInventoryTransactions(prev => prev.map(t => t.id === id ? updated : t));
+        return updated;
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const addInventoryTransaction = async (tx) => {
     try {
       const res = await apiFetch('/api/data/inventory/transactions', {
@@ -408,6 +485,25 @@ export const DataProvider = ({ children }) => {
     }
   };
 
+  const updateTransaction = async (id, tx) => {
+    try {
+      const res = await apiFetch(`/api/data/transactions/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(tx)
+      });
+      if (res.ok) {
+        fetchData();
+        toast("Transaction updated successfully!", "success");
+      } else {
+        toast("Failed to update transaction", "error");
+      }
+    } catch (err) {
+      console.error(err);
+      toast("Error updating transaction", "error");
+    }
+  };
+
   const deleteInventoryTransaction = async (id) => {
     try {
       const res = await apiFetch(`/api/data/inventory/transactions/${id}`, { method: 'DELETE' });
@@ -420,6 +516,59 @@ export const DataProvider = ({ children }) => {
     } catch (err) {
       console.error(err);
       toast("Error deleting transaction", "error");
+    }
+  };
+
+  const addLetter = async (letterData) => {
+    try {
+      const res = await apiFetch('/api/letters', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(letterData)
+      });
+      if (res.ok) {
+        fetchData();
+        toast("Letter added successfully!", "success");
+      } else {
+        toast("Failed to add letter", "error");
+      }
+    } catch (err) {
+      console.error(err);
+      toast("Error adding letter", "error");
+    }
+  };
+
+  const updateLetter = async (id, letterData) => {
+    try {
+      const res = await apiFetch(`/api/letters/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(letterData)
+      });
+      if (res.ok) {
+        fetchData();
+        toast("Letter updated successfully!", "success");
+      } else {
+        toast("Failed to update letter", "error");
+      }
+    } catch (err) {
+      console.error(err);
+      toast("Error updating letter", "error");
+    }
+  };
+
+  const deleteLetter = async (id) => {
+    try {
+      const res = await apiFetch(`/api/letters/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        fetchData();
+        toast("Letter deleted successfully!", "success");
+      } else {
+        toast("Failed to delete letter", "error");
+      }
+    } catch (err) {
+      console.error(err);
+      toast("Error deleting letter", "error");
     }
   };
 
@@ -436,15 +585,19 @@ export const DataProvider = ({ children }) => {
       inventoryTransactions,
       loading, 
       addTransaction, 
+      updateTransaction,
       deleteTransaction,
       addInventoryItem,
+      updateInventoryItem,
       deleteInventoryItem,
       addInventoryTransaction,
+      updateInventoryTransaction,
       deleteInventoryTransaction,
       addProject, 
       updateProject,
       deleteProject,
       addCategory,
+      updateCategory,
       deleteCategory,
       addClient,
       updateClient,
@@ -454,6 +607,11 @@ export const DataProvider = ({ children }) => {
       addUser,
       updateUser,
       deleteUser,
+      letters,
+      addLetter,
+      updateLetter,
+      deleteLetter,
+      bulkDelete,
       refreshData: fetchData 
     }}>
       {children}

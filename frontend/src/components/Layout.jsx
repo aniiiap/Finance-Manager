@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom"
-import { Building2, LayoutDashboard, WalletCards, FolderKanban, BookOpen, BarChart3, Tags, Settings, LogOut, Users, ArrowRightLeft, TrendingUp, ShieldAlert, Package, Menu, X, FileText, ChevronDown, ChevronRight } from "lucide-react"
+import { Mail, Building2, LayoutDashboard, WalletCards, FolderKanban, BookOpen, BarChart3, Tags, Settings, LogOut, Users, ArrowRightLeft, TrendingUp, ShieldAlert, Package, Menu, X, FileText, ChevronDown, ChevronRight, Trash2, Folder } from "lucide-react"
 import { useAuth } from "../context/AuthContext"
 
 const navigation = [
@@ -13,6 +13,7 @@ const navigation = [
     icon: WalletCards,
     children: [
       { name: 'Sales', href: '/sales', icon: FileText },
+      { name: 'Purchases', href: '/purchases', icon: FileText },
       { name: 'Stock', href: '/stock', icon: Package },
     ]
   },
@@ -20,6 +21,8 @@ const navigation = [
   { name: 'Profit & Loss', href: '/profit-and-loss', icon: TrendingUp },
   { name: 'Categories', href: '/categories', icon: Tags },
   { name: 'Reports', href: '/reports', icon: BarChart3 },
+  { name: 'Letters', href: '/letters', icon: Mail },
+  { name: 'Progress Reports', href: '/progress-report', icon: Folder },
 ]
 
 export default function Layout() {
@@ -58,6 +61,7 @@ export default function Layout() {
     }
     return item;
   }).filter(item => {
+    if (item.adminOnly && user?.role !== 'ADMIN') return false;
     if (user?.role === 'ADMIN') return true;
     if (item.children) {
       return item.children.length > 0;
@@ -229,6 +233,11 @@ export default function Layout() {
              {/* Desktop breadcrumbs/title space */}
           </div>
           <div className="flex items-center gap-4">
+            {user?.role === 'ADMIN' && (
+              <Link to="/recycle-bin" className="text-slate-500 hover:text-red-600" title="Recycle Bin">
+                <Trash2 className="w-5 h-5" />
+              </Link>
+            )}
              <div className="h-8 w-8 rounded-full bg-slate-200 flex items-center justify-center text-sm font-medium text-slate-600">
                {user?.name?.charAt(0)?.toUpperCase() || 'U'}
              </div>

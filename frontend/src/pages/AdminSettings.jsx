@@ -16,7 +16,7 @@ export default function AdminSettings() {
   const [userToDelete, setUserToDelete] = useState(null)
   const [userToEdit, setUserToEdit] = useState(null)
 
-  const availableModules = ["Clients", "Projects", "Transactions", "Sales", "Ledger", "Profit & Loss", "Stock", "Categories", "Reports"];
+  const availableModules = ["Clients", "Projects", "Transactions", "Sales", "Purchases", "Ledger", "Profit & Loss", "Stock", "Categories", "Reports", "Letters", "Progress Reports"];
 
   if (user?.role !== 'ADMIN') {
     return (

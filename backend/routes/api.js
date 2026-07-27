@@ -20,7 +20,7 @@ router.get('/projects', verifyToken, requireClient, requireModule('Projects', 'T
         `SELECT p.*, c.name as client FROM projects p
          JOIN user_project_access upa ON p.id = upa.project_id
          LEFT JOIN people c ON p.client_id = c.id
-         WHERE p.company_id = $1 AND upa.user_id = $2
+         WHERE p.company_id = $1 AND p.is_deleted = false AND upa.user_id = $2
          ORDER BY p.created_at DESC`,
         [req.user.company_id, req.user.id]
       );
@@ -29,7 +29,7 @@ router.get('/projects', verifyToken, requireClient, requireModule('Projects', 'T
         SELECT p.*, c.name as client 
         FROM projects p 
         LEFT JOIN people c ON p.client_id = c.id 
-        WHERE p.company_id = $1 
+        WHERE p.company_id = $1 AND p.is_deleted = false
         ORDER BY p.created_at DESC`, [req.user.company_id]);
     }
     res.json(result.rows);
@@ -60,13 +60,13 @@ router.post('/projects', verifyToken, requireClient, requireModule('Projects'), 
   }
 });
 
-router.delete('/projects/:id', verifyToken, requireClient, requireModule('Projects'), async (req, res) => {
+router.delete('/projects/:id', verifyToken, verifyAdmin, requireClient, requireModule('Projects'), async (req, res) => {
   try {
     const { id } = req.params;
     if (!(await ensureProjectAccess(req, id))) {
       return res.status(403).json({ error: 'No access to this project' });
     }
-    await pool.query('DELETE FROM projects WHERE id = $1 AND company_id = $2', [id, req.user.company_id]);
+    await pool.query('UPDATE projects SET is_deleted = true, deleted_at = CURRENT_TIMESTAMP WHERE id = $1 AND company_id = $2', [id, req.user.company_id]);
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
@@ -91,7 +91,7 @@ router.get('/transactions', verifyToken, requireClient, requireModule('Transacti
         SELECT t.*, t.narration as description, t.payment_method as "paymentMethod", t.person_id as party_id, p.name as project_name 
         FROM transactions t 
         LEFT JOIN projects p ON t.project_id = p.id
-        WHERE t.company_id = $1 
+        WHERE t.company_id = $1 AND t.is_deleted = false
         ORDER BY t.date DESC
       `, [req.user.company_id]);
     }
@@ -120,7 +120,7 @@ router.post('/transactions', verifyToken, requireClient, requireModule('Transact
   }
 });
 
-router.put('/transactions/:id', verifyToken, requireClient, requireModule('Transactions'), async (req, res) => {
+router.put('/transactions/:id', verifyToken, verifyAdmin, requireClient, requireModule('Transactions'), async (req, res) => {
   try {
     const { id } = req.params;
     const { amount, type, description, status } = req.body;
@@ -149,7 +149,7 @@ router.put('/transactions/:id', verifyToken, requireClient, requireModule('Trans
   }
 });
 
-router.delete('/transactions/:id', verifyToken, requireClient, requireModule('Transactions'), async (req, res) => {
+router.delete('/transactions/:id', verifyToken, verifyAdmin, requireClient, requireModule('Transactions'), async (req, res) => {
   try {
     const { id } = req.params;
     if (req.user.role === 'USER') {
@@ -163,7 +163,7 @@ router.delete('/transactions/:id', verifyToken, requireClient, requireModule('Tr
         return res.status(403).json({ error: 'No access to this transaction' });
       }
     }
-    await pool.query('DELETE FROM transactions WHERE id = $1 AND company_id = $2', [id, req.user.company_id]);
+    await pool.query('UPDATE transactions SET is_deleted = true, deleted_at = CURRENT_TIMESTAMP WHERE id = $1 AND company_id = $2', [id, req.user.company_id]);
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
@@ -173,7 +173,7 @@ router.delete('/transactions/:id', verifyToken, requireClient, requireModule('Tr
 // --- CATEGORIES ---
 router.get('/categories', verifyToken, requireClient, requireModule('Categories', 'Transactions', 'Ledger', 'Profit & Loss'), async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM categories WHERE company_id = $1', [req.user.company_id]);
+    const result = await pool.query('SELECT * FROM categories WHERE company_id = $1 AND is_deleted = false', [req.user.company_id]);
     res.json(result.rows);
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
@@ -191,10 +191,10 @@ router.post('/categories', verifyToken, requireClient, requireModule('Categories
   }
 });
 
-router.delete('/categories/:id', verifyToken, requireClient, requireModule('Categories'), async (req, res) => {
+router.delete('/categories/:id', verifyToken, verifyAdmin, requireClient, requireModule('Categories'), async (req, res) => {
   try {
     const { id } = req.params;
-    await pool.query('DELETE FROM categories WHERE id = $1 AND company_id = $2', [id, req.user.company_id]);
+    await pool.query('UPDATE categories SET is_deleted = true, deleted_at = CURRENT_TIMESTAMP WHERE id = $1 AND company_id = $2', [id, req.user.company_id]);
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
@@ -204,7 +204,7 @@ router.delete('/categories/:id', verifyToken, requireClient, requireModule('Cate
 // --- CLIENTS / PARTIES ---
 router.get('/people', verifyToken, requireClient, requireModule('Clients', 'Projects', 'Transactions', 'Sales'), async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM people WHERE company_id = $1', [req.user.company_id]);
+    const result = await pool.query('SELECT * FROM people WHERE company_id = $1 AND is_deleted = false', [req.user.company_id]);
     res.json(result.rows);
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
@@ -224,10 +224,10 @@ router.post('/people', verifyToken, requireClient, requireModule('Clients'), asy
   }
 });
 
-router.delete('/people/:id', verifyToken, requireClient, requireModule('Clients'), async (req, res) => {
+router.delete('/people/:id', verifyToken, verifyAdmin, requireClient, requireModule('Clients'), async (req, res) => {
   try {
     const { id } = req.params;
-    await pool.query('DELETE FROM people WHERE id = $1 AND company_id = $2', [id, req.user.company_id]);
+    await pool.query('UPDATE people SET is_deleted = true, deleted_at = CURRENT_TIMESTAMP WHERE id = $1 AND company_id = $2', [id, req.user.company_id]);
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
@@ -308,7 +308,7 @@ router.post('/users', verifyToken, verifyAdmin, requireClient, async (req, res) 
   }
 });
 
-router.put('/users/:id', verifyToken, verifyAdmin, requireClient, async (req, res) => {
+router.put('/users/:id', verifyToken, verifyAdmin,  verifyAdmin, requireClient, async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -365,7 +365,7 @@ router.put('/users/:id', verifyToken, verifyAdmin, requireClient, async (req, re
   }
 });
 
-router.delete('/users/:id', verifyToken, verifyAdmin, requireClient, async (req, res) => {
+router.delete('/users/:id', verifyToken, verifyAdmin,  verifyAdmin, requireClient, async (req, res) => {
   try {
     const { id } = req.params;
     // Don't let admin delete themselves
@@ -395,7 +395,7 @@ router.get('/companies', verifyToken, async (req, res) => {
   }
 });
 
-router.put('/companies/:id/status', verifyToken, async (req, res) => {
+router.put('/companies/:id/status', verifyToken, verifyAdmin, async (req, res) => {
   if (req.user.role !== 'SUPER_ADMIN') return res.status(403).json({ error: 'Forbidden' });
   try {
     const { id } = req.params;
@@ -407,7 +407,7 @@ router.put('/companies/:id/status', verifyToken, async (req, res) => {
   }
 });
 
-router.put('/companies/:id', verifyToken, async (req, res) => {
+router.put('/companies/:id', verifyToken, verifyAdmin, async (req, res) => {
   if (req.user.role !== 'SUPER_ADMIN') return res.status(403).json({ error: 'Forbidden' });
   const client = await pool.connect();
   try {
@@ -437,7 +437,7 @@ router.put('/companies/:id', verifyToken, async (req, res) => {
   }
 });
 
-router.put('/projects/:id', verifyToken, requireClient, requireModule('Projects'), async (req, res) => {
+router.put('/projects/:id', verifyToken, verifyAdmin, requireClient, requireModule('Projects'), async (req, res) => {
   try {
     if (!(await ensureProjectAccess(req, req.params.id))) {
       return res.status(403).json({ error: 'No access to this project' });
@@ -448,7 +448,7 @@ router.put('/projects/:id', verifyToken, requireClient, requireModule('Projects'
   } catch(e) { res.status(500).json({error: 'Server error'}); }
 });
 
-router.put('/people/:id', verifyToken, requireClient, requireModule('Clients'), async (req, res) => {
+router.put('/people/:id', verifyToken, verifyAdmin, requireClient, requireModule('Clients'), async (req, res) => {
   try {
     const { name, phone } = req.body;
     await pool.query('UPDATE people SET name=$1, phone=$2 WHERE id=$3 AND company_id=$4', [name, phone, req.params.id, req.user.company_id]);
@@ -459,7 +459,7 @@ router.put('/people/:id', verifyToken, requireClient, requireModule('Clients'), 
 // --- INVENTORY ---
 router.get('/inventory/items', verifyToken, requireClient, requireModule('Stock'), async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM inventory_items WHERE company_id = $1 ORDER BY name ASC', [req.user.company_id]);
+    const result = await pool.query('SELECT * FROM inventory_items WHERE company_id = $1 AND is_deleted = false ORDER BY name ASC', [req.user.company_id]);
     res.json(result.rows);
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
@@ -479,9 +479,9 @@ router.post('/inventory/items', verifyToken, requireClient, requireModule('Stock
   }
 });
 
-router.delete('/inventory/items/:id', verifyToken, requireClient, requireModule('Stock'), async (req, res) => {
+router.delete('/inventory/items/:id', verifyToken, verifyAdmin, requireClient, requireModule('Stock'), async (req, res) => {
   try {
-    await pool.query('DELETE FROM inventory_items WHERE id = $1 AND company_id = $2', [req.params.id, req.user.company_id]);
+    await pool.query('UPDATE inventory_items SET is_deleted = true, deleted_at = CURRENT_TIMESTAMP WHERE id = $1 AND company_id = $2', [req.params.id, req.user.company_id]);
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
@@ -536,9 +536,9 @@ router.post('/inventory/transactions', verifyToken, requireClient, requireModule
   }
 });
 
-router.delete('/inventory/transactions/:id', verifyToken, requireClient, requireModule('Stock'), async (req, res) => {
+router.delete('/inventory/transactions/:id', verifyToken, verifyAdmin, requireClient, requireModule('Stock'), async (req, res) => {
   try {
-    await pool.query('DELETE FROM inventory_transactions WHERE id = $1 AND company_id = $2', [req.params.id, req.user.company_id]);
+    await pool.query('UPDATE inventory_transactions SET is_deleted = true, deleted_at = CURRENT_TIMESTAMP WHERE id = $1 AND company_id = $2', [req.params.id, req.user.company_id]);
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
@@ -555,6 +555,60 @@ router.get('/company-info', verifyToken, async (req, res) => {
     `, [req.user.company_id]);
     res.json(result.rows[0]);
   } catch(e) { res.status(500).json({error: 'Server error'}); }
+});
+
+router.post('/bulk-delete/:table', verifyToken, verifyAdmin, async (req, res) => {
+  try {
+    const { table } = req.params;
+    const { ids } = req.body;
+    const allowedTables = ['projects', 'transactions', 'categories', 'people', 'letters', 'purchases', 'inventory_items', 'inventory_transactions', 'invoices'];
+    if (!allowedTables.includes(table)) return res.status(400).json({ error: 'Invalid table' });
+    if (!Array.isArray(ids) || ids.length === 0) return res.status(400).json({ error: 'No IDs provided' });
+    
+    // Convert to parameterized query format
+    const query = `UPDATE ${table} SET is_deleted = true, deleted_at = CURRENT_TIMESTAMP WHERE company_id = $1 AND id = ANY($2::int[])`;
+    await pool.query(query, [req.user.company_id, ids]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+router.put('/categories/:id', verifyToken, verifyAdmin, requireClient, requireModule('Categories'), async (req, res) => {
+  try {
+    const { name, type, parent_id } = req.body;
+    const result = await pool.query(
+      'UPDATE categories SET name = $1, type = $2, parent_id = $3 WHERE id = $4 AND company_id = $5 RETURNING *',
+      [name, type, parent_id || null, req.params.id, req.user.company_id]
+    );
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Category not found' });
+    res.json(result.rows[0]);
+  } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
+router.put('/inventory/items/:id', verifyToken, verifyAdmin, requireClient, requireModule('Stock'), async (req, res) => {
+  try {
+    const { name, unit, min_stock, price } = req.body;
+    const result = await pool.query(
+      'UPDATE inventory_items SET name = $1, unit = $2, min_stock = $3, price = $4 WHERE id = $5 AND company_id = $6 RETURNING *',
+      [name, unit, min_stock, price || 0, req.params.id, req.user.company_id]
+    );
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Item not found' });
+    res.json(result.rows[0]);
+  } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
+router.put('/inventory/transactions/:id', verifyToken, verifyAdmin, requireClient, requireModule('Stock'), async (req, res) => {
+  try {
+    const { type, quantity, reference, date, notes } = req.body;
+    const result = await pool.query(
+      'UPDATE inventory_transactions SET type = $1, quantity = $2, reference = $3, date = $4, notes = $5 WHERE id = $6 AND company_id = $7 RETURNING *',
+      [type, quantity, reference, date, notes, req.params.id, req.user.company_id]
+    );
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Transaction not found' });
+    res.json(result.rows[0]);
+  } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
 module.exports = router;

@@ -17,8 +17,10 @@ const s3 = new S3Client({
 const upload = multer({ storage: multer.memoryStorage() });
 
 const requireClient = (req, res, next) => {
-    if (!req.user.company_id) return res.status(403).json({ error: 'Client context required' });
-    next();
+  if (req.user.role === 'SUPER_ADMIN') {
+    return res.status(403).json({ error: 'Super Admins cannot access client data' });
+  }
+  next();
 };
 
 // Helper to calculate total amount to words (Indian Numbering System)
@@ -49,11 +51,11 @@ function numberToWords(number) {
     return `INR ${rsWord}${paiseStr} Only`;
 }
 
-// Get all invoices for company
-router.get('/invoices', verifyToken, requireClient, requireModule('Sales'), async (req, res) => {
+// Get all purchases for company
+router.get('/purchases', verifyToken, requireClient, requireModule('Purchases'), async (req, res) => {
     try {
         const result = await pool.query(
-            `SELECT * FROM invoices WHERE company_id = $1 AND is_deleted = false ORDER BY created_at DESC`,
+            `SELECT * FROM purchases WHERE company_id = $1 AND is_deleted = false ORDER BY created_at DESC`,
             [req.user.company_id]
         );
         res.json(result.rows);
@@ -62,44 +64,44 @@ router.get('/invoices', verifyToken, requireClient, requireModule('Sales'), asyn
     }
 });
 
-// Get specific invoice by ID with items and company details
-router.get('/invoices/:id', verifyToken, requireClient, requireModule('Sales'), async (req, res) => {
+// Get specific purchase by ID with items and company details
+router.get('/purchases/:id', verifyToken, requireClient, requireModule('Purchases'), async (req, res) => {
     try {
         const { id } = req.params;
-        const invoiceRes = await pool.query(
+        const purchaseRes = await pool.query(
             `SELECT i.*, 
                     c.name as company_name, c.address as company_address, c.gstin as company_gstin, 
                     c.state_name as company_state_name, c.state_code as company_state_code, 
                     c.bank_name, c.bank_account_no, c.bank_ifsc, c.authorised_signatory
-             FROM invoices i 
+             FROM purchases i 
              JOIN companies c ON i.company_id = c.id
              WHERE i.id = $1 AND i.company_id = $2`,
             [id, req.user.company_id]
         );
         
-        if (invoiceRes.rows.length === 0) return res.status(404).json({ error: 'Invoice not found' });
+        if (purchaseRes.rows.length === 0) return res.status(404).json({ error: 'purchase not found' });
         
-        const invoice = invoiceRes.rows[0];
+        const purchase = purchaseRes.rows[0];
         
         const itemsRes = await pool.query(
-            `SELECT * FROM invoice_items WHERE invoice_id = $1 ORDER BY id ASC`,
+            `SELECT * FROM purchase_items WHERE purchase_id = $1 ORDER BY id ASC`,
             [id]
         );
         
-        invoice.items = itemsRes.rows;
-        res.json(invoice);
+        purchase.items = itemsRes.rows;
+        res.json(purchase);
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Server error' });
     }
 });
 
-// Auto generate next invoice number
-router.get('/next-invoice-no', verifyToken, requireClient, requireModule('Sales'), async (req, res) => {
+// Auto generate next purchase number
+router.get('/next-purchase-no', verifyToken, requireClient, requireModule('Purchases'), async (req, res) => {
     try {
-        // Find latest invoice number for company
+        // Find latest purchase number for company
         const result = await pool.query(
-            `SELECT invoice_no FROM invoices WHERE company_id = $1 ORDER BY created_at DESC LIMIT 1`,
+            `SELECT purchase_no FROM purchases WHERE company_id = $1 ORDER BY created_at DESC LIMIT 1`,
             [req.user.company_id]
         );
         
@@ -112,7 +114,7 @@ router.get('/next-invoice-no', verifyToken, requireClient, requireModule('Sales'
             return res.json({ nextNo: `${prefix}001` });
         }
         
-        const lastNo = result.rows[0].invoice_no;
+        const lastNo = result.rows[0].purchase_no;
         const match = lastNo.match(/\/(\d+)$/);
         if (match) {
             const nextNum = parseInt(match[1], 10) + 1;
@@ -125,17 +127,17 @@ router.get('/next-invoice-no', verifyToken, requireClient, requireModule('Sales'
     }
 });
 
-// Create Invoice
-router.post('/invoices', verifyToken, requireClient, requireModule('Sales'), async (req, res) => {
+// Create purchase
+router.post('/purchases', verifyToken, requireClient, requireModule('Purchases'), async (req, res) => {
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
         
         const {
-            invoice_no, date, 
-            buyer_id, buyer_name, buyer_address, buyer_gstin, buyer_state_name, buyer_state_code,
-            delivery_note, payment_terms, reference_no, buyer_order_no, dispatch_doc_no,
-            dispatch_through, destination, terms_of_delivery,
+            purchase_no, date, 
+            vendor_id, vendor_name, vendor_address, vendor_gstin, vendor_state_name, vendor_state_code,
+            delivery_note, payment_terms, reference_no, vendor_order_no, dispatch_doc_no,
+            dispatch_through, destination, terms_of_delivery, authorised_signatory_for,
             items
         } = req.body;
         
@@ -146,7 +148,7 @@ router.post('/invoices', verifyToken, requireClient, requireModule('Sales'), asy
         // Calculate totals dynamically backend-side to prevent manipulation
         if (!Array.isArray(items) || items.length === 0) {
             await client.query('ROLLBACK');
-            return res.status(400).json({ error: 'At least one invoice item is required' });
+            return res.status(400).json({ error: 'At least one purchase item is required' });
         }
 
         items.forEach(item => {
@@ -172,15 +174,15 @@ router.post('/invoices', verifyToken, requireClient, requireModule('Sales'), asy
         const amount_in_words = numberToWords(grand_total);
         
         const invRes = await client.query(
-            `INSERT INTO invoices (
-                company_id, invoice_no, date, buyer_id, buyer_name, buyer_address, buyer_gstin, buyer_state_name, buyer_state_code,
-                delivery_note, payment_terms, reference_no, buyer_order_no, dispatch_doc_no, dispatch_through, destination, terms_of_delivery,
-                total_taxable_amount, total_cgst, total_sgst, round_off, grand_total, amount_in_words, created_by
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24) RETURNING id`,
+            `INSERT INTO purchases (
+                company_id, purchase_no, date, vendor_id, vendor_name, vendor_address, vendor_gstin, vendor_state_name, vendor_state_code,
+                delivery_note, payment_terms, reference_no, vendor_order_no, dispatch_doc_no, dispatch_through, destination, terms_of_delivery,
+                total_taxable_amount, total_cgst, total_sgst, round_off, grand_total, amount_in_words, created_by, authorised_signatory_for
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25) RETURNING id`,
             [
-                req.user.company_id, invoice_no, date, buyer_id || null, buyer_name, buyer_address, buyer_gstin, buyer_state_name, buyer_state_code,
-                delivery_note, payment_terms, reference_no, buyer_order_no, dispatch_doc_no, dispatch_through, destination, terms_of_delivery,
-                total_taxable_amount.toFixed(2), total_cgst.toFixed(2), total_sgst.toFixed(2), round_off, grand_total.toFixed(2), amount_in_words, req.user.id
+                req.user.company_id, purchase_no, date, vendor_id || null, vendor_name, vendor_address, vendor_gstin, vendor_state_name, vendor_state_code,
+                delivery_note, payment_terms, reference_no, vendor_order_no, dispatch_doc_no, dispatch_through, destination, terms_of_delivery,
+                total_taxable_amount.toFixed(2), total_cgst.toFixed(2), total_sgst.toFixed(2), round_off, grand_total.toFixed(2), amount_in_words, req.user.id, authorised_signatory_for
             ]
         );
         
@@ -188,8 +190,8 @@ router.post('/invoices', verifyToken, requireClient, requireModule('Sales'), asy
         
         for (const item of items) {
             await client.query(
-                `INSERT INTO invoice_items (
-                    invoice_id, description, hsn_sac, quantity, rate, per, amount, gst_rate, cgst_amount, sgst_amount, total_amount
+                `INSERT INTO purchase_items (
+                    purchase_id, description, hsn_sac, quantity, rate, per, amount, gst_rate, cgst_amount, sgst_amount, total_amount
                 ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
                 [
                     invId, item.description, item.hsn_sac, item.quantity || null, item.rate || null, item.per, item.amount, 
@@ -199,7 +201,7 @@ router.post('/invoices', verifyToken, requireClient, requireModule('Sales'), asy
         }
         
         await client.query('COMMIT');
-        res.status(201).json({ success: true, invoice_id: invId });
+        res.status(201).json({ success: true, purchase_id: invId });
     } catch (err) {
         await client.query('ROLLBACK');
         console.error(err);
@@ -209,28 +211,28 @@ router.post('/invoices', verifyToken, requireClient, requireModule('Sales'), asy
     }
 });
 
-// Upload PDF for Invoice
-router.post('/invoices/:id/upload-pdf', verifyToken, requireClient, requireModule('Sales'), (req, res) => {
+// Upload PDF for purchase
+router.post('/purchases/:id/upload-pdf', verifyToken, requireClient, requireModule('Purchases'), (req, res) => {
     upload.single('pdf')(req, res, async (err) => {
         if (err) {
             return res.status(400).json({ error: err.message || 'Invalid file upload' });
         }
         try {
-            const invoiceId = req.params.id;
+            const purchaseId = req.params.id;
 
             const check = await pool.query(
-                `SELECT id FROM invoices WHERE id = $1 AND company_id = $2`,
-                [invoiceId, req.user.company_id]
+                `SELECT id FROM purchases WHERE id = $1 AND company_id = $2`,
+                [purchaseId, req.user.company_id]
             );
             if (check.rows.length === 0) {
-                return res.status(404).json({ error: 'Invoice not found' });
+                return res.status(404).json({ error: 'purchase not found' });
             }
 
             if (!req.file) {
                 return res.status(400).json({ error: 'No PDF file provided' });
             }
 
-            const fileKey = `invoices/${req.user.company_id}/${invoiceId}_${Date.now()}.pdf`;
+            const fileKey = `purchases/${req.user.company_id}/${purchaseId}_${Date.now()}.pdf`;
 
             await s3.send(new PutObjectCommand({
                 Bucket: process.env.R2_BUCKET_NAME,
@@ -239,7 +241,7 @@ router.post('/invoices/:id/upload-pdf', verifyToken, requireClient, requireModul
                 ContentType: 'application/pdf',
             }));
 
-            await pool.query(`UPDATE invoices SET pdf_url = $1 WHERE id = $2`, [fileKey, invoiceId]);
+            await pool.query(`UPDATE purchases SET pdf_url = $1 WHERE id = $2`, [fileKey, purchaseId]);
 
             res.json({ success: true, pdf_url: fileKey });
         } catch (uploadErr) {
@@ -250,10 +252,10 @@ router.post('/invoices/:id/upload-pdf', verifyToken, requireClient, requireModul
 });
 
 // Proxy PDF to bypass Cloudinary restrictions and force inline view
-router.get('/invoices/:id/pdf', verifyToken, requireClient, requireModule('Sales'), async (req, res) => {
+router.get('/purchases/:id/pdf', verifyToken, requireClient, requireModule('Purchases'), async (req, res) => {
     try {
-        const invoiceId = req.params.id;
-        const inv = await pool.query(`SELECT pdf_url, invoice_no FROM invoices WHERE id = $1 AND company_id = $2`, [invoiceId, req.user.company_id]);
+        const purchaseId = req.params.id;
+        const inv = await pool.query(`SELECT pdf_url, purchase_no FROM purchases WHERE id = $1 AND company_id = $2`, [purchaseId, req.user.company_id]);
         
         if (inv.rows.length === 0 || !inv.rows[0].pdf_url) {
             return res.status(404).json({ error: 'PDF not found' });
@@ -269,7 +271,7 @@ router.get('/invoices/:id/pdf', verifyToken, requireClient, requireModule('Sales
         const response = await s3.send(command);
         
         const disposition = req.query.download === 'true' ? 'attachment' : 'inline';
-        const filename = `Invoice_${inv.rows[0].invoice_no.replace(/\//g, '-')}.pdf`;
+        const filename = `Purchase_${inv.rows[0].purchase_no.replace(/\//g, '-')}.pdf`;
         
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `${disposition}; filename="${filename}"`);
@@ -281,7 +283,7 @@ router.get('/invoices/:id/pdf', verifyToken, requireClient, requireModule('Sales
     }
 });
 
-// Update Company Invoice Settings (Admin only)
+// Update Company purchase Settings (Admin only)
 router.put('/company-settings', verifyToken, verifyAdmin, requireClient, verifyAdmin, async (req, res) => {
     try {
         const { name, address, gstin, state_name, state_code, bank_name, bank_account_no, bank_ifsc, authorised_signatory, payment_methods } = req.body;
@@ -304,7 +306,7 @@ router.put('/company-settings', verifyToken, verifyAdmin, requireClient, verifyA
 });
 
 // Get Company Settings
-router.get('/company-settings', verifyToken, requireClient, requireModule('Sales'), async (req, res) => {
+router.get('/company-settings', verifyToken, requireClient, requireModule('Purchases'), async (req, res) => {
     try {
         const result = await pool.query(
             `SELECT name, address, gstin, state_name, state_code, bank_name, bank_account_no, bank_ifsc, authorised_signatory, payment_methods 
@@ -317,16 +319,16 @@ router.get('/company-settings', verifyToken, requireClient, requireModule('Sales
     }
 });
 
-// Delete Invoice
-router.delete('/invoices/:id', verifyToken, verifyAdmin, requireClient, requireModule('Sales'), async (req, res) => {
+// Delete purchase
+router.delete('/purchases/:id', verifyToken, verifyAdmin, requireClient, requireModule('Purchases'), async (req, res) => {
     try {
-        const invoiceId = req.params.id;
-        // Ownership check first; invoice_items cascade via FK ON DELETE CASCADE
+        const purchaseId = req.params.id;
+        // Ownership check first; purchase_items cascade via FK ON DELETE CASCADE
         const result = await pool.query(
-            `UPDATE invoices SET is_deleted = true, deleted_at = CURRENT_TIMESTAMP WHERE id = $1 AND company_id = $2 RETURNING id`,
-            [invoiceId, req.user.company_id]
+            `UPDATE purchases SET is_deleted = true, deleted_at = CURRENT_TIMESTAMP WHERE id = $1 AND company_id = $2 RETURNING id`,
+            [purchaseId, req.user.company_id]
         );
-        if (result.rows.length === 0) return res.status(404).json({ error: 'Invoice not found' });
+        if (result.rows.length === 0) return res.status(404).json({ error: 'purchase not found' });
         res.json({ success: true });
     } catch (err) {
         console.error(err);

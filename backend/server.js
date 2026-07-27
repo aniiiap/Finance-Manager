@@ -99,8 +99,11 @@ app.use('/api/auth/login', loginLimiter);
 app.use('/api/auth/set-password', loginLimiter);
 app.use('/api/auth', authLimiter, require('./routes/auth'));
 app.use('/api/data', apiLimiter, require('./routes/api'));
+app.use('/api/letters', apiLimiter, require('./routes/letters'));
 app.use('/api/sales', apiLimiter, require('./routes/sales'));
-
+app.use('/api/purchases', apiLimiter, require('./routes/purchases'));
+app.use('/api/recycle-bin', apiLimiter, require('./routes/recycle_bin'));
+app.use('/api/progress', apiLimiter, require('./routes/progress'));
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', env: process.env.NODE_ENV || 'development' });
 });

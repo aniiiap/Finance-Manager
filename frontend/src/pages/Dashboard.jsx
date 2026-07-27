@@ -7,7 +7,7 @@ import { TrendingUp, CreditCard, FolderKanban, IndianRupee, Plus, BookOpen } fro
 import { useData } from "../context/DataContext"
 import { Modal } from "../components/ui/modal"
 import { Button } from "../components/ui/button"
-import { useState } from "react"
+import React, { useState } from "react"
 
 const monthlyData = [
   { name: 'May', income: 4000000, expense: 2400000 },
@@ -28,10 +28,11 @@ const pieData = [
 const COLORS = ['#0f172a', '#334155', '#64748b', '#94a3b8'];
 
 export default function Dashboard() {
-  const { clients, projects, transactions, people, addTransaction, addClient, addProject, categories, companyInfo } = useData()
+  const { clients, projects, transactions, people, addTransaction, addClient, addProject, categories, addCategory, companyInfo } = useData()
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [txType, setTxType] = useState('Income')
-  const [txProject, setTxProject] = useState(projects[0]?.name || '')
+  const [txType, setTxType] = useState('Expense')
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false)
+  const [txProject, setTxProject] = useState(projects[0]?.id || '')
 
   const getPaymentMethods = () => {
     if (companyInfo?.payment_methods) {
@@ -70,13 +71,13 @@ export default function Dashboard() {
     const formData = new FormData(e.target)
     addTransaction({
       type: formData.get('type'),
-      project: formData.get('project'),
-      category: formData.get('category'),
-      party: formData.get('party'),
+      project_id: formData.get('project_id'),
+      category_id: formData.get('category_id'),
+      party_id: formData.get('party_id'),
       amount: formData.get('amount'),
       paymentMethod: formData.get('paymentMethod'),
       date: formData.get('date'),
-      narration: formData.get('narration')
+      description: formData.get('narration')
     })
     setIsModalOpen(false)
   }
@@ -209,17 +210,17 @@ export default function Dashboard() {
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Type</label>
-              <select name="type" className="flex h-10 w-full rounded-md border border-slate-200 px-3 text-sm" value={txType} onChange={(e) => setTxType(e.target.value)}>
-                <option value="Income">Income</option>
-                <option value="Expense">Expense</option>
+              <select className="flex h-10 w-full rounded-md border border-slate-200 px-3 text-sm bg-slate-50 cursor-not-allowed" value={txType} disabled>
+                <option value={txType}>{txType}</option>
               </select>
+              <input type="hidden" name="type" value={txType} />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">Project</label>
-              <select name="project" className="flex h-10 w-full rounded-md border border-slate-200 px-3 text-sm" value={txProject} onChange={(e) => setTxProject(e.target.value)}>
-                {projects.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
+              <select name="project_id" className="flex h-10 w-full rounded-md border border-slate-200 px-3 text-sm" value={txProject} onChange={(e) => setTxProject(e.target.value)}>
+                {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
               </select>
             </div>
             <div className="space-y-2">
@@ -230,11 +231,17 @@ export default function Dashboard() {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">Category</label>
-              <select name="category" required className="flex h-10 w-full rounded-md border border-slate-200 px-3 text-sm">
+              <select name="category_id" required className="flex h-10 w-full rounded-md border border-slate-200 px-3 text-sm" onChange={(e) => { if (e.target.value === "CREATE_NEW") { setIsCategoryModalOpen(true); e.target.value = ""; } }}>
                 <option value="">Select Category...</option>
-                {categories.filter(c => c.type === txType).map(c => (
-                  <option key={c.id} value={c.name}>{c.name}</option>
+                {categories.filter(c => c.type === txType && !c.parent_id).map(parent => (
+                  <React.Fragment key={parent.id}>
+                    <option value={parent.id}>{parent.name}</option>
+                    {categories.filter(c => c.parent_id === parent.id).map(child => (
+                      <option key={child.id} value={child.id}>&nbsp;&nbsp;— {child.name}</option>
+                    ))}
+                  </React.Fragment>
                 ))}
+                <option value="CREATE_NEW" className="font-bold text-indigo-600">+ Create New Category</option>
               </select>
             </div>
             <div className="space-y-2">
@@ -253,18 +260,48 @@ export default function Dashboard() {
           <div className="space-y-2">
             <label className="text-sm font-medium">{txType === 'Income' ? 'Received From (Client)' : 'Paid To (Subcontractor/Supplier)'}</label>
             {txType === 'Income' ? (
-              <input name="party" type="text" readOnly value={selectedProjectDetails?.client || ''} className="flex h-10 w-full rounded-md border border-slate-200 px-3 text-sm bg-slate-50 cursor-not-allowed" />
+              <>
+                <input type="text" readOnly value={selectedProjectDetails?.client || ''} className="flex h-10 w-full rounded-md border border-slate-200 px-3 text-sm bg-slate-50 cursor-not-allowed" />
+                <input type="hidden" name="party_id" value={people.find(c => c.name === selectedProjectDetails?.client)?.id || ''} />
+              </>
             ) : (
-              <select name="party" required className="flex h-10 w-full rounded-md border border-slate-200 px-3 text-sm">
+              <select name="party_id" className="flex h-10 w-full rounded-md border border-slate-200 px-3 text-sm">
                 <option value="">Select Person...</option>
-                {people.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
+                {people.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
               </select>
             )}
           </div>
           <Button type="submit" className="w-full">Save Transaction</Button>
         </form>
       </Modal>
+
+      <Modal isOpen={isCategoryModalOpen} onClose={() => setIsCategoryModalOpen(false)} title="Create New Category">
+        <form onSubmit={async (e) => {
+          e.preventDefault();
+          const name = e.target.name.value;
+          const parent_id = e.target.parent_id.value || null;
+          await addCategory({ name, parent_id, type: txType, status: 'Active' });
+          setIsCategoryModalOpen(false);
+        }} className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Category Name</label>
+            <input name="name" required className="flex h-10 w-full rounded-md border border-slate-200 px-3 text-sm" />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Parent Category (Optional)</label>
+            <select name="parent_id" className="flex h-10 w-full rounded-md border border-slate-200 px-3 text-sm">
+              <option value="">None (Top Level)</option>
+              {categories.filter(c => c.type === txType && !c.parent_id).map(c => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+          </div>
+          <div className="flex justify-end gap-2 mt-6">
+            <Button type="button" variant="outline" onClick={() => setIsCategoryModalOpen(false)}>Cancel</Button>
+            <Button type="submit" className="bg-slate-900 hover:bg-slate-800 text-white">Create Category</Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   )
 }
-

@@ -12,7 +12,7 @@ import { Modal } from "../components/ui/modal"
 
 export default function ProjectDetail() {
   const { id } = useParams()
-  const { projects, transactions, people, addTransaction, addPerson, deletePerson, categories, companyInfo } = useData()
+  const { projects, transactions, people, addTransaction, addPerson, deletePerson, categories, addCategory, companyInfo } = useData()
   const project = projects.find(p => p.id === parseInt(id)) || projects[0]
   
   const getPaymentMethods = () => {
@@ -35,7 +35,8 @@ export default function ProjectDetail() {
 
   // Modals state
   const [isTxModalOpen, setIsTxModalOpen] = useState(false)
-  const [txType, setTxType] = useState('Income')
+  const [txType, setTxType] = useState('Expense')
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false)
   const [isPersonModalOpen, setIsPersonModalOpen] = useState(false)
   
   let projectTransactions = transactions.filter(t => (t.project_name || t.project) === project.name)
@@ -216,7 +217,7 @@ export default function ProjectDetail() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Project Ledger</CardTitle>
-              <Button size="sm" onClick={() => setIsTxModalOpen(true)} className="gap-2"><Plus className="w-4 h-4"/> Add Entry</Button>
+              <Button size="sm" onClick={() => { setTxType('Expense'); setIsTxModalOpen(true); }} className="gap-2"><Plus className="w-4 h-4"/> Add Entry</Button>
             </CardHeader>
             <CardContent>
               <div className="overflow-x-auto w-full">
@@ -435,10 +436,10 @@ export default function ProjectDetail() {
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Type</label>
-              <select name="type" className="flex h-10 w-full rounded-md border border-slate-200 px-3 text-sm" value={txType} onChange={(e) => setTxType(e.target.value)}>
-                <option value="Income">Income</option>
-                <option value="Expense">Expense</option>
+              <select className="flex h-10 w-full rounded-md border border-slate-200 px-3 text-sm bg-slate-50 cursor-not-allowed" value={txType} disabled>
+                <option value={txType}>{txType}</option>
               </select>
+              <input type="hidden" name="type" value={txType} />
             </div>
           </div>
           <div className="space-y-2">
@@ -448,16 +449,17 @@ export default function ProjectDetail() {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">Category</label>
-              <select name="category_id" required className="flex h-10 w-full rounded-md border border-slate-200 px-3 text-sm">
+              <select name="category_id" required className="flex h-10 w-full rounded-md border border-slate-200 px-3 text-sm" onChange={(e) => { if (e.target.value === "CREATE_NEW") { setIsCategoryModalOpen(true); e.target.value = ""; } }}>
                 <option value="">Select Category...</option>
                 {categories.filter(c => c.type === txType && !c.parent_id).map(parent => (
                   <React.Fragment key={parent.id}>
                     <option value={parent.id}>{parent.name}</option>
                     {categories.filter(c => c.parent_id === parent.id).map(child => (
-                      <option key={child.id} value={child.id}>&nbsp;&nbsp;↳ {child.name}</option>
+                      <option key={child.id} value={child.id}>&nbsp;&nbsp;— {child.name}</option>
                     ))}
                   </React.Fragment>
                 ))}
+                <option value="CREATE_NEW" className="font-bold text-indigo-600">+ Create New Category</option>
               </select>
             </div>
             <div className="space-y-2">
@@ -481,13 +483,42 @@ export default function ProjectDetail() {
                 <input type="hidden" name="party_id" value={people.find(c => c.name === project.client)?.id || ''} />
               </>
             ) : (
-              <select name="party_id" required className="flex h-10 w-full rounded-md border border-slate-200 px-3 text-sm">
+              <select name="party_id" className="flex h-10 w-full rounded-md border border-slate-200 px-3 text-sm">
                 <option value="">Select Person...</option>
                 {people.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
               </select>
             )}
           </div>
           <Button type="submit" className="w-full">Save Transaction</Button>
+        </form>
+      </Modal>
+
+      {/* Category Modal */}
+      <Modal isOpen={isCategoryModalOpen} onClose={() => setIsCategoryModalOpen(false)} title="Create New Category">
+        <form onSubmit={async (e) => {
+          e.preventDefault();
+          const name = e.target.name.value;
+          const parent_id = e.target.parent_id.value || null;
+          await addCategory({ name, parent_id, type: txType, status: 'Active' });
+          setIsCategoryModalOpen(false);
+        }} className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Category Name</label>
+            <input name="name" required className="flex h-10 w-full rounded-md border border-slate-200 px-3 text-sm" />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Parent Category (Optional)</label>
+            <select name="parent_id" className="flex h-10 w-full rounded-md border border-slate-200 px-3 text-sm">
+              <option value="">None (Top Level)</option>
+              {categories.filter(c => c.type === txType && !c.parent_id).map(c => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+          </div>
+          <div className="flex justify-end gap-2 mt-6">
+            <Button type="button" variant="outline" onClick={() => setIsCategoryModalOpen(false)}>Cancel</Button>
+            <Button type="submit" className="bg-slate-900 hover:bg-slate-800 text-white">Create Category</Button>
+          </div>
         </form>
       </Modal>
 

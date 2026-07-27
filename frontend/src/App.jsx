@@ -8,9 +8,13 @@ import Transactions from './pages/Transactions'
 import Ledger from './pages/Ledger'
 import ProfitAndLoss from './pages/ProfitAndLoss'
 import Reports from './pages/Reports'
+import RecycleBin from './pages/RecycleBin'
+import ProgressReport from './pages/ProgressReport'
+import Letters from './pages/Letters'
 import Stock from './pages/Stock'
 import Categories from './pages/Categories'
 import Sales from './pages/Sales'
+import Purchases from './pages/Purchases'
 import Login from './pages/Login'
 import SetPassword from './pages/SetPassword'
 import AdminSettings from './pages/AdminSettings'
@@ -66,10 +70,14 @@ function App() {
                   <Route path="projects/:id" element={<ProtectedRoute requireClient={true} requireModule="Projects"><ProjectDetail /></ProtectedRoute>} />
                   <Route path="transactions" element={<ProtectedRoute requireClient={true} requireModule="Transactions"><Transactions /></ProtectedRoute>} />
                   <Route path="sales" element={<ProtectedRoute requireClient={true} requireModule="Sales"><Sales /></ProtectedRoute>} />
+                  <Route path="purchases" element={<ProtectedRoute requireClient={true} requireModule="Purchases"><Purchases /></ProtectedRoute>} />
                   <Route path="ledger" element={<ProtectedRoute requireClient={true} requireModule="Ledger"><Ledger /></ProtectedRoute>} />
                   <Route path="profit-and-loss" element={<ProtectedRoute requireClient={true} requireModule="Profit & Loss"><ProfitAndLoss /></ProtectedRoute>} />
                   <Route path="stock" element={<ProtectedRoute requireClient={true} requireModule="Stock"><Stock /></ProtectedRoute>} />
                   <Route path="reports" element={<ProtectedRoute requireClient={true} requireModule="Reports"><Reports /></ProtectedRoute>} />
+                  <Route path="letters" element={<ProtectedRoute requireClient={true} requireModule="Letters"><Letters /></ProtectedRoute>} />
+                  <Route path="recycle-bin" element={<ProtectedRoute requireAdmin={true}><RecycleBin /></ProtectedRoute>} />
+                  <Route path="progress-report" element={<ProtectedRoute requireClient={true} requireModule="Progress Reports"><ProgressReport /></ProtectedRoute>} />
                   <Route path="categories" element={<ProtectedRoute requireClient={true} requireModule="Categories"><Categories /></ProtectedRoute>} />
                   <Route path="settings" element={<ProtectedRoute requireAdmin={true} requireClient={true}><Settings /></ProtectedRoute>} />
                   <Route path="admin" element={<ProtectedRoute requireAdmin={true} requireClient={true}><AdminSettings /></ProtectedRoute>} />

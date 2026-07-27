@@ -1,16 +1,20 @@
 import { useState, useEffect } from "react"
 import { useData } from "../context/DataContext"
-import { formatFullCurrency } from "../data/mock"
+import { formatCurrency, formatFullCurrency } from "../data/mock"
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table"
 import { Button } from "../components/ui/button"
-import { ArrowLeft, Search } from "lucide-react"
+import { Filter, ArrowLeft, Search } from "lucide-react"
+
+import { DateFilter } from "../components/ui/DateFilter"
+import { ExportButtons } from "../components/ui/ExportButtons"
 
 export default function Ledger() {
   const { projects, transactions, people, clients, categories } = useData()
   const [selectedProject, setSelectedProject] = useState("all")
   const [selectedParty, setSelectedParty] = useState("all")
   const [searchQuery, setSearchQuery] = useState('')
+  const [filterDate, setFilterDate] = useState('')
 
   const getPartyName = (idOrName) => {
     if (!idOrName) return '';
@@ -45,13 +49,19 @@ export default function Ledger() {
   if (selectedParty !== "all") {
     projectTransactions = projectTransactions.filter(t => getPartyName(t.party_id || t.party) === selectedParty)
   }
+  if (filterDate) {
+    projectTransactions = projectTransactions.filter(t => (t.date || '').startsWith(filterDate))
+  }
   if (searchQuery.trim() !== '') {
     const q = searchQuery.toLowerCase()
     projectTransactions = projectTransactions.filter(tx => 
-      getPartyName(tx.party_id || tx.party).toLowerCase().includes(q) || 
-      getCategoryName(tx.category_id || tx.category).toLowerCase().includes(q) ||
-      (tx.narration && tx.narration.toLowerCase().includes(q)) ||
-      (tx.description && tx.description.toLowerCase().includes(q))
+      String(getPartyName(tx.party_id || tx.party) || '').toLowerCase().includes(q) || 
+      String(getCategoryName(tx.category_id || tx.category) || '').toLowerCase().includes(q) ||
+      String(tx.narration || '').toLowerCase().includes(q) ||
+      String(tx.description || '').toLowerCase().includes(q) ||
+      String(tx.project_name || tx.project || '').toLowerCase().includes(q) ||
+      String(tx.amount || '').toLowerCase().includes(q) ||
+      String(tx.paymentMethod || '').toLowerCase().includes(q)
     )
   }
 
@@ -66,28 +76,53 @@ export default function Ledger() {
   const totalPages = Math.ceil(ledgerData.length / itemsPerPage)
   const paginatedLedger = ledgerData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
 
+  const exportData = ledgerData.map(tx => ({
+    "Date": new Date(tx.date).toLocaleDateString(),
+    "Project": tx.project_name || tx.project,
+    "Party": getPartyName(tx.party_id || tx.party),
+    "Narration": tx.narration || tx.description || '',
+    "Category": getCategoryName(tx.category_id || tx.category),
+    "Method": tx.payment_method,
+    "Credit": tx.type === 'Income' ? tx.amount : '',
+    "Debit": tx.type === 'Expense' ? tx.amount : '',
+    "Balance": tx.runningBalance
+  }))
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Master Ledger</h2>
           <p className="text-sm text-slate-500">Chronological statement of credits and debits.</p>
         </div>
-        <div className="flex gap-4 items-end">
-          <div className="w-56 relative">
+        <div className="flex gap-2 w-full lg:w-auto mt-4 lg:mt-0 flex-wrap">
+          <ExportButtons 
+            data={exportData} 
+            columns={["Date", "Project", "Party", "Narration", "Category", "Method", "Credit", "Debit", "Balance"]}
+            filename={`Ledger_${new Date().toISOString().split('T')[0]}`}
+            title="Ledger Statement"
+          />
+        </div>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end w-full mt-4 md:mt-0">
+        <div className="relative w-full">
             <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1 block">Search</label>
             <div className="relative">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-500" />
               <input 
                 type="text"
-                placeholder="Search..."
+                placeholder="Search any field..."
                 className="flex h-10 w-full rounded-md border border-slate-200 bg-white pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
           </div>
-          <div className="w-56">
+          <div className="w-full">
+            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1 block">Date</label>
+            <DateFilter value={filterDate} onChange={setFilterDate} className="bg-white h-10" />
+          </div>
+          <div className="w-full">
             <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1 block">Filter by Project</label>
             <select 
               className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900"
@@ -100,7 +135,7 @@ export default function Ledger() {
               ))}
             </select>
           </div>
-          <div className="w-64">
+          <div className="w-full">
             <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1 block">Filter by Party</label>
             <select 
               className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900"
@@ -117,7 +152,6 @@ export default function Ledger() {
             </select>
           </div>
         </div>
-      </div>
 
       {(selectedParty !== 'all' || selectedProject !== 'all') && (
         <Button 

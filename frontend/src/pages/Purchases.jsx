@@ -5,13 +5,14 @@ import { Button } from "../components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table"
 import { Plus, Printer, ArrowLeft, Trash2, Eye, Download, Loader2, Settings, Search } from "lucide-react"
 import html2pdf from "html2pdf.js"
+import { Badge } from "../components/ui/badge"
+import { DateFilter } from "../components/ui/DateFilter"
+import { ExportButtons } from "../components/ui/ExportButtons"
 
-import InvoiceTemplate from "../components/InvoiceTemplate"
+import PurchaseTemplate from "../components/PurchaseTemplate"
 import { Modal } from "../components/ui/modal"
 import { apiFetch } from '../lib/api'
 import { useToast } from "../context/ToastContext"
-import { DateFilter } from "../components/ui/DateFilter"
-import { ExportButtons } from "../components/ui/ExportButtons"
 
 const gstStateCodes = {
   "01": "Jammu & Kashmir", "02": "Himachal Pradesh", "03": "Punjab", "04": "Chandigarh",
@@ -39,38 +40,42 @@ const blankCompanySettings = () => ({
 const isSettingsComplete = (s) =>
   Boolean(s?.name?.trim() && s?.address?.trim() && s?.bank_account_no?.trim());
 
-export default function Sales() {
+export default function Purchases() {
   const { token, user } = useAuth()
   const { toast } = useToast()
   const [view, setView] = useState("list") // 'list', 'create', 'print'
-  const [invoices, setInvoices] = useState([])
-  const [searchQuery, setSearchQuery] = useState("")
-  const [filterDate, setFilterDate] = useState("")
-  const [currentInvoice, setCurrentInvoice] = useState(null)
+  const [purchases, setpurchases] = useState([])
+  const [currentPurchase, setCurrentPurchase] = useState(null)
   const [companySettings, setCompanySettings] = useState(null)
   const [showSettingsModal, setShowSettingsModal] = useState(false)
   const [settingsThenCreate, setSettingsThenCreate] = useState(false)
   const [isSavingSettings, setIsSavingSettings] = useState(false)
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false)
-  const [invoiceToGenerate, setInvoiceToGenerate] = useState(null)
+  const [PurchaseToGenerate, setPurchaseToGenerate] = useState(null)
   const printRef = useRef(null)
+
+  // Filters & Bulk Delete
+  const [searchQuery, setSearchQuery] = useState('')
+  const [filterDate, setFilterDate] = useState('')
+  const [selectedIds, setSelectedIds] = useState([])
   
   const [formData, setFormData] = useState({
-    invoice_no: "",
+    purchase_no: "",
     date: new Date().toISOString().split('T')[0],
-    buyer_name: "",
-    buyer_address: "",
-    buyer_gstin: "",
-    buyer_state_name: "",
-    buyer_state_code: "",
+    vendor_name: "",
+    vendor_address: "",
+    vendor_gstin: "",
+    vendor_state_name: "",
+    vendor_state_code: "",
     delivery_note: "",
     payment_terms: "",
     reference_no: "",
-    buyer_order_no: "",
+    vendor_order_no: "",
     dispatch_doc_no: "",
     dispatch_through: "",
     destination: "",
-    terms_of_delivery: ""
+    terms_of_delivery: "",
+    authorised_signatory_for: ""
   })
   
   const [items, setItems] = useState([
@@ -78,14 +83,14 @@ export default function Sales() {
   ])
 
   useEffect(() => {
-    if (view === "list") fetchInvoices();
-    if (view === "create") fetchNextInvoiceNo();
+    if (view === "list") fetchpurchases();
+    if (view === "create") fetchNextPurchaseNo();
     fetchCompanySettings();
   }, [view, token])
 
   const fetchCompanySettings = async () => {
     try {
-      const res = await apiFetch('/api/sales/company-settings')
+      const res = await apiFetch('/api/purchases/company-settings')
       if (res.ok) {
         const data = await res.json()
         setCompanySettings(data || blankCompanySettings())
@@ -110,31 +115,31 @@ export default function Sales() {
     }
   }
 
-  const fetchInvoices = async () => {
+  const fetchpurchases = async () => {
     try {
-      const res = await apiFetch('/api/sales/invoices')
-      if (res.ok) setInvoices(await res.json())
+      const res = await apiFetch('/api/purchases/purchases')
+      if (res.ok) setpurchases(await res.json())
     } catch (err) {
       console.error(err)
     }
   }
 
-  const fetchNextInvoiceNo = async () => {
+  const fetchNextPurchaseNo = async () => {
     try {
-      const res = await apiFetch('/api/sales/next-invoice-no')
+      const res = await apiFetch('/api/purchases/next-purchase-no')
       if (res.ok) {
         const data = await res.json()
-        setFormData(prev => ({ ...prev, invoice_no: data.nextNo }))
+        setFormData(prev => ({ ...prev, purchase_no: data.nextNo }))
       }
     } catch (err) {}
   }
 
   const handlePrint = async (id) => {
     try {
-      const res = await apiFetch(`/api/sales/invoices/${id}`)
+      const res = await apiFetch(`/api/purchases/purchases/${id}`)
       if (res.ok) {
         const data = await res.json()
-        setCurrentInvoice(data)
+        setCurrentPurchase(data)
         setView("print")
       }
     } catch (err) {
@@ -148,11 +153,11 @@ export default function Sales() {
       const newData = { ...prev, [name]: value };
       
       // Auto-populate state code and name from GSTIN
-      if (name === 'buyer_gstin' && value.length >= 2) {
+      if (name === 'vendor_gstin' && value.length >= 2) {
         const code = value.substring(0, 2);
         if (gstStateCodes[code]) {
-          newData.buyer_state_code = code;
-          newData.buyer_state_name = gstStateCodes[code];
+          newData.vendor_state_code = code;
+          newData.vendor_state_name = gstStateCodes[code];
         }
       }
       return newData;
@@ -206,7 +211,7 @@ export default function Sales() {
     e.preventDefault()
     setIsSavingSettings(true)
     try {
-      const res = await apiFetch('/api/sales/company-settings', {
+      const res = await apiFetch('/api/purchases/company-settings', {
         method: "PUT",
         headers: { 
           "Content-Type": "application/json"
@@ -240,7 +245,7 @@ export default function Sales() {
   const renderCompanyProfileForm = (submitLabel) => (
     <form onSubmit={saveCompanySettings} className="space-y-4">
       <p className="text-sm text-slate-500">
-        These details appear on every tax invoice. Use your legal company name — not a personal name.
+        These details appear on every tax Purchase. Use your legal company name — not a personal name.
       </p>
 
       <div className="space-y-2">
@@ -300,10 +305,7 @@ export default function Sales() {
         </div>
       </div>
 
-      <div className="space-y-2">
-        <label className="text-sm font-medium">Authorised Signatory Name</label>
-        <input type="text" name="authorised_signatory" value={companySettings?.authorised_signatory || ""} onChange={handleSettingsChange} className="flex h-10 w-full sm:w-1/2 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950" />
-      </div>
+
 
       <div className="flex justify-end gap-3 pt-2">
         <Button type="button" variant="outline" onClick={closeSettingsModal}>Cancel</Button>
@@ -318,10 +320,10 @@ export default function Sales() {
     <Modal
       isOpen={showSettingsModal}
       onClose={closeSettingsModal}
-      title="Company Invoice Profile"
+      title="Company Purchase Profile"
       maxWidth="max-w-2xl"
     >
-      {renderCompanyProfileForm(settingsThenCreate ? "Save & Create Invoice" : "Save Changes")}
+      {renderCompanyProfileForm(settingsThenCreate ? "Save & Create Purchase" : "Save Changes")}
     </Modal>
   )
 
@@ -329,15 +331,15 @@ export default function Sales() {
     e.preventDefault()
     
     // Validate
-    if (!formData.invoice_no || !formData.date || !formData.buyer_name) {
-      toast("Invoice No, Date, and Buyer Name are required.", "error")
+    if (!formData.purchase_no || !formData.date || !formData.vendor_name) {
+      toast("Purchase No, Date, and Vendor Name are required.", "error")
       return
     }
     
     const payload = { ...formData, items }
     
     try {
-      const res = await apiFetch('/api/sales/invoices', {
+      const res = await apiFetch('/api/purchases/purchases', {
         method: "POST",
         headers: { 
           "Content-Type": "application/json"
@@ -347,11 +349,11 @@ export default function Sales() {
       
       if (res.ok) {
         const data = await res.json()
-        toast("Invoice saved! Generating PDF...", "info")
+        toast("Purchase saved! Generating PDF...", "info")
         // Start PDF Generation process
-        await triggerPdfGeneration(data.invoice_id)
+        await triggerPdfGeneration(data.purchase_id)
       } else {
-        toast("Failed to create invoice", "error")
+        toast("Failed to create Purchase", "error")
       }
     } catch (err) {
       toast("Network error", "error")
@@ -361,56 +363,93 @@ export default function Sales() {
   const triggerPdfGeneration = async (id) => {
     setIsGeneratingPdf(true)
     try {
-      const res = await apiFetch(`/api/sales/invoices/${id}`)
+      const res = await apiFetch(`/api/purchases/purchases/${id}`)
       if (res.ok) {
         const data = await res.json()
-        setInvoiceToGenerate(data)
+        setPurchaseToGenerate(data)
       }
     } catch (err) {
       console.error(err)
       setIsGeneratingPdf(false)
       setView("list")
+    } 
+  }
+
+  const handleBulkDelete = async () => {
+    if (!window.confirm(`Are you sure you want to delete ${selectedIds.length} purchases?`)) return;
+    try {
+      const res = await apiFetch(`/api/data/bulk-delete/purchases`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: selectedIds })
+      });
+      if (res.ok) {
+        fetchpurchases();
+        setSelectedIds([]);
+        toast(`Successfully deleted ${selectedIds.length} purchases!`, "success");
+      } else {
+        toast("Failed to perform bulk delete", "error");
+      }
+    } catch (err) {
+      console.error(err);
+      toast("Error during bulk delete", "error");
     }
   }
 
-  // Effect to automatically generate and upload PDF when invoiceToGenerate is set
-  useEffect(() => {
-    if (invoiceToGenerate && printRef.current) {
-      generateAndUploadPdf(invoiceToGenerate.id)
-    }
-  }, [invoiceToGenerate])
+  const toggleSelectAll = (e, items) => {
+    if (e.target.checked) setSelectedIds(items.map(i => i.id));
+    else setSelectedIds([]);
+  }
 
-  const [pdfInvoiceData, setPdfInvoiceData] = useState(null)
+  const toggleSelect = (id) => {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+  }
+
+  const filteredPurchases = purchases.filter(p => {
+    const searchMatch = (p.purchase_no || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
+                        (p.vendor_name || '').toLowerCase().includes(searchQuery.toLowerCase());
+    const dateMatch = filterDate ? (p.date || '').startsWith(filterDate) : true;
+    return searchMatch && dateMatch;
+  });
+
+  // Effect to automatically generate and upload PDF when PurchaseToGenerate is set
+  useEffect(() => {
+    if (PurchaseToGenerate && printRef.current) {
+      generateAndUploadPdf(PurchaseToGenerate.id)
+    }
+  }, [PurchaseToGenerate])
+
+  const [pdfPurchaseData, setPdfPurchaseData] = useState(null)
   const [pdfAction, setPdfAction] = useState(null) // 'view' or 'download'
   const pdfRef = useRef(null)
 
   const handleOpenPdf = async (invId, download = false) => {
     try {
-      const res = await apiFetch(`/api/sales/invoices/${invId}`)
-      if (!res.ok) throw new Error('Failed to fetch invoice data')
+      const res = await apiFetch(`/api/purchases/purchases/${invId}`)
+      if (!res.ok) throw new Error('Failed to fetch Purchase data')
       const data = await res.json()
       setPdfAction(download ? 'download' : 'view')
-      setPdfInvoiceData(data)
+      setPdfPurchaseData(data)
     } catch (err) {
       console.error(err)
-      toast("Failed to load invoice data.", "error")
+      toast("Failed to load Purchase data.", "error")
     }
   }
 
   useEffect(() => {
-    if (pdfInvoiceData && pdfAction) {
+    if (pdfPurchaseData && pdfAction) {
       // Wait for React to render the hidden template so pdfRef is available
       const timer = setTimeout(() => {
         if (!pdfRef.current) {
           toast("Failed to generate PDF - template not ready.", "error")
-          setPdfInvoiceData(null)
+          setPdfPurchaseData(null)
           setPdfAction(null)
           return
         }
         const element = pdfRef.current
         const opt = {
           margin:       [0.3, 0.3, 0.3, 0.3],
-          filename:     `Invoice_${pdfInvoiceData.invoice_no.replace(/\//g, '-')}.pdf`,
+          filename:     `Purchase_${pdfPurchaseData.purchase_no.replace(/\//g, '-')}.pdf`,
           image:        { type: 'jpeg', quality: 0.98 },
           html2canvas:  { scale: 2, useCORS: true, width: 760 },
           jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
@@ -431,24 +470,24 @@ export default function Sales() {
             toast("PDF opened successfully!", "success")
           }
           setTimeout(() => URL.revokeObjectURL(url), 5000)
-          setPdfInvoiceData(null)
+          setPdfPurchaseData(null)
           setPdfAction(null)
         }).catch((err) => {
           console.error(err)
           toast("Failed to generate PDF.", "error")
-          setPdfInvoiceData(null)
+          setPdfPurchaseData(null)
           setPdfAction(null)
         })
       }, 100) // Small delay to let React render the template
       return () => clearTimeout(timer)
     }
-  }, [pdfInvoiceData, pdfAction])
+  }, [pdfPurchaseData, pdfAction])
 
-  const generateAndUploadPdf = async (invoiceId) => {
+  const generateAndUploadPdf = async (PurchaseId) => {
     const element = printRef.current;
     const opt = {
       margin:       [0.3, 0.3, 0.3, 0.3],
-      filename:     `Invoice_${invoiceToGenerate.invoice_no.replace(/\//g, '-')}.pdf`,
+      filename:     `Purchase_${PurchaseToGenerate.purchase_no.replace(/\//g, '-')}.pdf`,
       image:        { type: 'jpeg', quality: 0.98 },
       html2canvas:  { scale: 2, useCORS: true, width: 760 },
       jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
@@ -460,20 +499,20 @@ export default function Sales() {
       const formData = new FormData();
       formData.append('pdf', pdfBlob, opt.filename);
 
-      const res = await apiFetch(`/api/sales/invoices/${invoiceId}/upload-pdf`, {
+      const res = await apiFetch(`/api/purchases/purchases/${PurchaseId}/upload-pdf`, {
         method: 'POST',
         body: formData
       });
 
       if (res.ok) {
-        setInvoiceToGenerate(null)
+        setPurchaseToGenerate(null)
         setIsGeneratingPdf(false)
         setView("list")
-        fetchInvoices()
-        toast("Invoice and PDF saved successfully!", "success")
+        fetchpurchases()
+        toast("Purchase and PDF saved successfully!", "success")
       } else {
         toast("Failed to upload PDF to cloud.", "error")
-        setInvoiceToGenerate(null)
+        setPurchaseToGenerate(null)
         setIsGeneratingPdf(false)
         setView("list")
       }
@@ -499,15 +538,15 @@ export default function Sales() {
   const formGrandTotal = Math.round(formRawTotal)
   const formRoundOff = (formGrandTotal - formRawTotal).toFixed(2)
 
-  const deleteInvoice = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this invoice? This action cannot be undone.')) return
+  const deletePurchase = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this Purchase? This action cannot be undone.')) return
     try {
-      const res = await apiFetch(`/api/sales/invoices/${id}`, { method: 'DELETE' })
+      const res = await apiFetch(`/api/purchases/purchases/${id}`, { method: 'DELETE' })
       if (res.ok) {
-        fetchInvoices()
-        toast("Invoice deleted successfully!", "success")
+        fetchpurchases()
+        toast("Purchase deleted successfully!", "success")
       } else {
-        toast("Failed to delete invoice", "error")
+        toast("Failed to delete Purchase", "error")
       }
     } catch (err) {
       console.error(err)
@@ -515,66 +554,69 @@ export default function Sales() {
     }
   }
 
-  const filteredInvoices = invoices.filter(inv => {
-    const searchMatch = (inv.invoice_no || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
-                        (inv.buyer_name || '').toLowerCase().includes(searchQuery.toLowerCase());
-    const dateMatch = filterDate ? (inv.date || '').startsWith(filterDate) : true;
-    return searchMatch && dateMatch;
-  });
-
-  const exportData = filteredInvoices.map((inv, idx) => ({
+  const exportData = filteredPurchases.map((p, idx) => ({
     "Sr No": idx + 1,
-    "Invoice No": inv.invoice_no,
-    "Date": new Date(inv.date).toLocaleDateString(),
-    "Buyer": inv.buyer_name,
-    "Grand Total": inv.grand_total
-  }));
+    "Purchase No": p.purchase_no,
+    "Date": new Date(p.date).toLocaleDateString(),
+    "Vendor": p.vendor_name,
+    "Grand Total": p.grand_total
+  }))
 
   // -----------------------------------------------------
   // RENDER: LIST VIEW
   // -----------------------------------------------------
   if (view === "list") {
     return (
-      <div className="bg-slate-50 min-h-screen">
-        <div className="max-w-7xl mx-auto space-y-6">
-          <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-              <div>
-                <h2 className="text-2xl font-bold tracking-tight">Sales & Invoices</h2>
-                <p className="text-sm text-slate-500">Manage tax invoices and sales records.</p>
-              </div>
-              <div className="flex gap-2 w-full sm:w-auto flex-wrap">
-                <ExportButtons 
-                  data={exportData} 
-                  columns={["Sr No", "Invoice No", "Date", "Buyer", "Grand Total"]}
-                  filename={`SalesInvoices_${new Date().toISOString().split('T')[0]}`}
-                  title="Sales Invoices Report"
-                  hidePdf={true}
-                />
-                {(user?.role === "ADMIN" || user?.role === "SUPER_ADMIN") && (
-                  <Button variant="outline" onClick={() => openSettingsModal(false)} className="gap-2 w-full sm:w-auto">
-                    <Settings className="w-4 h-4" /> Company Profile
-                  </Button>
-                )}
-                <Button onClick={handleCreateClick} className="gap-2 w-full sm:w-auto">
-                  <Plus className="w-4 h-4" /> Create Invoice
-                </Button>
-              </div>
+      <>
+        <div className="space-y-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <h2 className="text-2xl font-bold tracking-tight">Purchases</h2>
+              <p className="text-sm text-slate-500">Manage tax purchases records.</p>
             </div>
-            
-            <div className="flex flex-col sm:flex-row gap-4 items-center bg-white p-4 rounded-lg border shadow-sm">
+            <div className="flex gap-2 w-full sm:w-auto flex-wrap">
+              <ExportButtons 
+                data={exportData} 
+                columns={["Sr No", "Purchase No", "Date", "Vendor", "Grand Total"]}
+                filename={`Purchases_${new Date().toISOString().split('T')[0]}`}
+                title="Purchases Report"
+                hidePdf={true}
+              />
+              {selectedIds.length > 0 && user?.role === 'ADMIN' && (
+                <Button variant="destructive" onClick={handleBulkDelete} className="gap-2">
+                  <Trash2 className="w-4 h-4" /> Delete Selected ({selectedIds.length})
+                </Button>
+              )}
+              {(user?.role === "ADMIN" || user?.role === "SUPER_ADMIN") && (
+                <Button variant="outline" onClick={() => openSettingsModal(false)} className="gap-2">
+                  <Settings className="w-4 h-4" /> Company Profile
+                </Button>
+              )}
+              <Button onClick={handleCreateClick} className="gap-2">
+                <Plus className="w-4 h-4" /> Create Purchase
+              </Button>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-4 items-center bg-white p-4 rounded-lg border shadow-sm">
               <div className="relative flex-1 w-full">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
                 <input 
                   type="text" 
-                  placeholder="Search invoices by No. or Buyer..." 
+                  placeholder="Search purchases by No. or Vendor..." 
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-9 pr-4 py-2 border rounded-md text-sm"
                 />
               </div>
               <div className="flex gap-2 w-full sm:w-auto">
-                <DateFilter value={filterDate} onChange={setFilterDate} />
+                <input 
+                  type="date" 
+                  value={filterDate}
+                  onChange={(e) => setFilterDate(e.target.value)}
+                  className="border rounded-md px-3 py-2 text-sm min-w-[140px]"
+                  title="Filter by Date"
+                />
               </div>
             </div>
 
@@ -582,36 +624,58 @@ export default function Sales() {
           <CardContent className="p-0">
             <Table>
               <TableHeader>
-                <TableRow>
+                <TableRow className="bg-slate-50">
+                  {user?.role === 'ADMIN' && (
+                    <TableHead className="w-12">
+                      <input 
+                        type="checkbox" 
+                        className="cursor-pointer rounded border-slate-300 w-4 h-4"
+                        checked={filteredPurchases.length > 0 && selectedIds.length === filteredPurchases.length}
+                        onChange={(e) => toggleSelectAll(e, filteredPurchases)}
+                      />
+                    </TableHead>
+                  )}
                   <TableHead className="w-12">Sr No</TableHead>
-                  <TableHead>Invoice No</TableHead>
+                  <TableHead>Purchase No</TableHead>
                   <TableHead>Date</TableHead>
-                  <TableHead>Buyer</TableHead>
+                  <TableHead>Vendor</TableHead>
                   <TableHead className="text-right">Grand Total</TableHead>
                   <TableHead className="text-center">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredInvoices.length === 0 ? (
-                  <TableRow><TableCell colSpan={6} className="text-center py-4 text-slate-500">No invoices found.</TableCell></TableRow>
-                ) : filteredInvoices.map((inv, idx) => (
-                  <TableRow key={inv.id}>
+                {filteredPurchases.length === 0 ? (
+                  <TableRow><TableCell colSpan={user?.role === 'ADMIN' ? 7 : 6} className="text-center py-4 text-slate-500">No purchases found.</TableCell></TableRow>
+                ) : filteredPurchases.map((inv, idx) => (
+                  <TableRow key={inv.id} className={selectedIds.includes(inv.id) ? 'bg-red-50/50' : ''}>
+                    {user?.role === 'ADMIN' && (
+                      <TableCell>
+                        <input 
+                          type="checkbox" 
+                          className="cursor-pointer rounded border-slate-300 w-4 h-4"
+                          checked={selectedIds.includes(inv.id)}
+                          onChange={() => toggleSelect(inv.id)}
+                        />
+                      </TableCell>
+                    )}
                     <TableCell>{idx + 1}</TableCell>
-                    <TableCell className="font-medium">{inv.invoice_no}</TableCell>
+                    <TableCell className="font-medium">{inv.purchase_no}</TableCell>
                     <TableCell>{new Date(inv.date).toLocaleDateString()}</TableCell>
-                    <TableCell>{inv.buyer_name}</TableCell>
+                    <TableCell>{inv.vendor_name}</TableCell>
                     <TableCell className="text-right font-medium">₹{parseFloat(inv.grand_total).toLocaleString()}</TableCell>
                     <TableCell className="text-center">
                       <div className="flex items-center justify-center gap-1">
-                            <Button variant="ghost" size="icon" onClick={() => handleOpenPdf(inv.id, false)} className="h-8 w-8" title="View">
+                            <Button variant="ghost" size="icon" onClick={() => handleOpenPdf(inv.id, false)} className="h-8 w-8 text-slate-500 hover:text-slate-900" title="View">
                               <Eye className="w-4 h-4" />
                             </Button>
-                            <Button variant="ghost" size="icon" onClick={() => handleOpenPdf(inv.id, true)} className="h-8 w-8" title="Download">
+                            <Button variant="ghost" size="icon" onClick={() => handleOpenPdf(inv.id, true)} className="h-8 w-8 text-slate-500 hover:text-slate-900" title="Download">
                               <Download className="w-4 h-4" />
                             </Button>
-                            <Button variant="ghost" size="icon" onClick={() => deleteInvoice(inv.id)} className="h-8 w-8 text-red-500 hover:text-red-700" title="Delete">
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
+                            {user?.role === 'ADMIN' && (
+                                <Button variant="ghost" size="icon" onClick={() => deletePurchase(inv.id)} className="h-8 w-8 text-slate-400 hover:text-red-600" title="Delete">
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -621,16 +685,15 @@ export default function Sales() {
           </CardContent>
         </Card>
 
-        {/* Hidden Invoice Template for View/Download PDF */}
-        {pdfInvoiceData && (
+        {/* Hidden Purchase Template for View/Download PDF */}
+        {pdfPurchaseData && (
           <div className="absolute top-[-9999px] left-[-9999px]">
-            <InvoiceTemplate invoice={pdfInvoiceData} innerRef={pdfRef} className="w-[760px]" />
+            <PurchaseTemplate purchase={pdfPurchaseData} innerRef={pdfRef} className="w-[760px]" />
           </div>
         )}
-          </div>
         </div>
         {companyProfileModal}
-      </div>
+      </>
     )
   }
 
@@ -646,7 +709,7 @@ export default function Sales() {
             <Button variant="outline" size="icon" onClick={() => setView("list")}>
               <ArrowLeft className="w-4 h-4" />
             </Button>
-            <h2 className="text-2xl font-bold tracking-tight">Create Tax Invoice</h2>
+            <h2 className="text-2xl font-bold tracking-tight">Create Tax Purchase</h2>
           </div>
           {(user?.role === "ADMIN" || user?.role === "SUPER_ADMIN") && (
             <Button variant="outline" size="sm" onClick={() => openSettingsModal(false)} className="gap-2">
@@ -658,12 +721,12 @@ export default function Sales() {
         <form onSubmit={handleSubmit} className="space-y-6">
           <Card>
             <CardHeader className="py-4">
-              <CardTitle className="text-lg">Invoice Details</CardTitle>
+              <CardTitle className="text-lg">Purchase Details</CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-1">
-                <label className="text-xs font-medium">Invoice No *</label>
-                <input type="text" name="invoice_no" required value={formData.invoice_no} onChange={handleFormChange} className="w-full h-9 rounded-md border border-slate-200 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-slate-900" />
+                <label className="text-xs font-medium">Purchase No *</label>
+                <input type="text" name="purchase_no" required value={formData.purchase_no} onChange={handleFormChange} className="w-full h-9 rounded-md border border-slate-200 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-slate-900" />
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-medium">Date *</label>
@@ -678,7 +741,7 @@ export default function Sales() {
                 <input type="text" name="payment_terms" value={formData.payment_terms} onChange={handleFormChange} className="w-full h-9 rounded-md border border-slate-200 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-slate-900" />
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-medium">Reference No. & Date</label>
+                <label className="text-xs font-medium">Supplier Invoice No. & Date</label>
                 <input type="text" name="reference_no" value={formData.reference_no} onChange={handleFormChange} className="w-full h-9 rounded-md border border-slate-200 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-slate-900" />
               </div>
             </CardContent>
@@ -686,28 +749,32 @@ export default function Sales() {
 
           <Card>
             <CardHeader className="py-4">
-              <CardTitle className="text-lg">Buyer Details (Bill to)</CardTitle>
+              <CardTitle className="text-lg">Vendor Details (Bill to)</CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1">
-                <label className="text-xs font-medium">Buyer Name *</label>
-                <input type="text" name="buyer_name" required value={formData.buyer_name} onChange={handleFormChange} className="w-full h-9 rounded-md border border-slate-200 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-slate-900" />
+                <label className="text-xs font-medium">Vendor Name *</label>
+                <input type="text" name="vendor_name" required value={formData.vendor_name} onChange={handleFormChange} className="w-full h-9 rounded-md border border-slate-200 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-slate-900" />
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-medium">GSTIN/UIN</label>
-                <input type="text" name="buyer_gstin" value={formData.buyer_gstin} onChange={handleFormChange} className="w-full h-9 rounded-md border border-slate-200 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-slate-900" />
+                <input type="text" name="vendor_gstin" value={formData.vendor_gstin} onChange={handleFormChange} className="w-full h-9 rounded-md border border-slate-200 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-slate-900" />
               </div>
               <div className="space-y-1 md:col-span-2">
                 <label className="text-xs font-medium">Address</label>
-                <input type="text" name="buyer_address" value={formData.buyer_address} onChange={handleFormChange} className="w-full h-9 rounded-md border border-slate-200 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-slate-900" placeholder="e.g. Dist. Bhilwara, State Rajasthan" />
+                <input type="text" name="vendor_address" value={formData.vendor_address} onChange={handleFormChange} className="w-full h-9 rounded-md border border-slate-200 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-slate-900" placeholder="e.g. Dist. Bhilwara, State Rajasthan" />
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-medium">State Name</label>
-                <input type="text" name="buyer_state_name" value={formData.buyer_state_name} onChange={handleFormChange} className="w-full h-9 rounded-md border border-slate-200 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-slate-900" />
+                <input type="text" name="vendor_state_name" value={formData.vendor_state_name} onChange={handleFormChange} className="w-full h-9 rounded-md border border-slate-200 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-slate-900" />
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-medium">State Code</label>
-                <input type="text" name="buyer_state_code" value={formData.buyer_state_code} onChange={handleFormChange} className="w-full h-9 rounded-md border border-slate-200 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-slate-900" />
+                <input type="text" name="vendor_state_code" value={formData.vendor_state_code} onChange={handleFormChange} className="w-full h-9 rounded-md border border-slate-200 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-slate-900" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium">Authorised Signatory For</label>
+                <input type="text" name="authorised_signatory_for" value={formData.authorised_signatory_for} onChange={handleFormChange} className="w-full h-9 rounded-md border border-slate-200 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-slate-900" placeholder="e.g. BHARTI CRUSHERS" />
               </div>
             </CardContent>
           </Card>
@@ -774,22 +841,22 @@ export default function Sales() {
           <div className="flex justify-end gap-4">
             <Button type="button" variant="outline" onClick={() => setView("list")} disabled={isGeneratingPdf}>Cancel</Button>
             <Button type="submit" disabled={isGeneratingPdf}>
-              {isGeneratingPdf ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating PDF...</> : "Save & Generate Invoice"}
+              {isGeneratingPdf ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating PDF...</> : "Save & Generate Purchase"}
             </Button>
           </div>
         </form>
 
-        {/* Hidden Invoice Template for PDF Generation */}
-        {invoiceToGenerate && (
+        {/* Hidden Purchase Template for PDF Generation */}
+        {PurchaseToGenerate && (
           <div className="absolute top-[-9999px] left-[-9999px]">
-            <InvoiceTemplate invoice={invoiceToGenerate} innerRef={printRef} className="w-[760px]" />
+            <PurchaseTemplate purchase={PurchaseToGenerate} innerRef={printRef} className="w-[760px]" />
           </div>
         )}
 
-        {/* Hidden Invoice Template for View/Download PDF */}
-        {pdfInvoiceData && (
+        {/* Hidden Purchase Template for View/Download PDF */}
+        {pdfPurchaseData && (
           <div className="absolute top-[-9999px] left-[-9999px]">
-            <InvoiceTemplate invoice={pdfInvoiceData} innerRef={pdfRef} className="w-[760px]" />
+            <PurchaseTemplate purchase={pdfPurchaseData} innerRef={pdfRef} className="w-[760px]" />
           </div>
         )}
       </div>
@@ -801,23 +868,23 @@ export default function Sales() {
   // -----------------------------------------------------
   // RENDER: PRINT VIEW
   // -----------------------------------------------------
-  if (view === "print" && currentInvoice) {
+  if (view === "print" && currentPurchase) {
     return (
       <div className="bg-white min-h-screen">
         <div className="print:hidden p-4 bg-slate-100 flex gap-4 justify-center border-b shadow-sm mb-8">
           <Button variant="outline" onClick={() => setView("list")}><ArrowLeft className="w-4 h-4 mr-2" /> Back</Button>
-          <Button onClick={() => window.print()} className="gap-2"><Printer className="w-4 h-4" /> Print Invoice</Button>
+          <Button onClick={() => window.print()} className="gap-2"><Printer className="w-4 h-4" /> Print Purchase</Button>
           <style dangerouslySetInnerHTML={{__html: `
             @media print {
               @page { margin: 0.5cm; size: A4 portrait; }
               body { background: white; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
               #sidebar, header, nav { display: none !important; }
               main { padding: 0 !important; margin: 0 !important; }
-              .invoice-container { width: 100% !important; border: 1px solid black !important; }
+              .Purchase-container { width: 100% !important; border: 1px solid black !important; }
             }
           `}} />
         </div>
-        <InvoiceTemplate invoice={currentInvoice} className="max-w-[800px] mx-auto" />
+        <PurchaseTemplate purchase={currentPurchase} className="max-w-[800px] mx-auto" />
       </div>
     )
   }

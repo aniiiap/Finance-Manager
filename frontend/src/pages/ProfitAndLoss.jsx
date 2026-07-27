@@ -2,11 +2,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table"
 import { useData } from "../context/DataContext"
 import { formatCurrency, formatFullCurrency } from "../data/mock"
+import { ExportButtons } from "../components/ui/ExportButtons"
 import { useState } from "react"
 
 export default function ProfitAndLoss() {
   const { transactions, projects, categories, people } = useData()
   const [selectedProject, setSelectedProject] = useState("all")
+  const [selectedClient, setSelectedClient] = useState("all")
 
   const getPartyName = (idOrName) => {
     if (!idOrName) return '--';
@@ -22,9 +24,11 @@ export default function ProfitAndLoss() {
     return cat ? cat.name : idOrName;
   };
 
-  const filteredTransactions = selectedProject === "all" 
-    ? transactions 
-    : transactions.filter(t => (t.project_name || t.project) === selectedProject)
+  const filteredTransactions = transactions.filter(t => {
+    const projectMatch = selectedProject === "all" || (t.project_name || t.project) === selectedProject;
+    const clientMatch = selectedClient === "all" || getPartyName(t.party_id || t.party) === selectedClient;
+    return projectMatch && clientMatch;
+  });
 
   const incomeTxs = filteredTransactions.filter(t => t.type === 'Income')
   const expenseTxs = filteredTransactions.filter(t => t.type === 'Expense')
@@ -103,25 +107,56 @@ export default function ProfitAndLoss() {
     )
   }
 
+  const exportData = filteredTransactions.map(tx => ({
+    "Date": new Date(tx.date).toLocaleDateString(),
+    "Type": tx.type,
+    "Category": getCategoryName(tx.category_id || tx.category),
+    "Project": tx.project_name || tx.project,
+    "Client/Party": getPartyName(tx.party_id || tx.party),
+    "Amount": tx.amount,
+    "Narration": tx.description || tx.narration || ''
+  }))
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Profit and Loss Statement</h2>
           <p className="text-sm text-slate-500">Comprehensive view of your business income, expenses, and net profit.</p>
         </div>
-        <div className="w-64">
-          <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1 block">Filter by Project</label>
-          <select 
-            className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900"
-            value={selectedProject} 
-            onChange={(e) => setSelectedProject(e.target.value)}
-          >
-            <option value="all">Entire Company (All Projects)</option>
-            {projects.map(p => (
-              <option key={p.id} value={p.name}>{p.name}</option>
-            ))}
-          </select>
+        <div className="flex gap-4 items-end flex-wrap">
+          <ExportButtons 
+            data={exportData} 
+            columns={["Date", "Type", "Category", "Project", "Client/Party", "Amount", "Narration"]}
+            filename={`ProfitAndLoss_${new Date().toISOString().split('T')[0]}`}
+            title="Profit and Loss Statement"
+          />
+          <div className="w-48">
+            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1 block">Filter by Client</label>
+            <select 
+              className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900"
+              value={selectedClient} 
+              onChange={(e) => setSelectedClient(e.target.value)}
+            >
+              <option value="all">All Clients</option>
+              {people.map(p => (
+                <option key={p.id} value={p.name}>{p.name}</option>
+              ))}
+            </select>
+          </div>
+          <div className="w-48">
+            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1 block">Filter by Project</label>
+            <select 
+              className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900"
+              value={selectedProject} 
+              onChange={(e) => setSelectedProject(e.target.value)}
+            >
+              <option value="all">All Projects</option>
+              {projects.map(p => (
+                <option key={p.id} value={p.name}>{p.name}</option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 

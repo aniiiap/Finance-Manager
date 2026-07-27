@@ -108,15 +108,15 @@ export default function InvoiceTemplate({ invoice, innerRef, className = "" }) {
   return (
     <div
       ref={innerRef}
-      className={`invoice-container border border-black bg-white text-black text-[11px] leading-tight font-sans ${className}`}
+      style={{ fontFamily: "Arial, Helvetica, sans-serif", WebkitTextStroke: "0.1px black" }} className={`invoice-container border-[1.5px] border-black bg-white text-black text-[11px] leading-tight font-sans ${className}`}
     >
-      <div className="text-center font-bold text-sm border-b border-black py-1">Tax Invoice</div>
+      <div className="text-center font-bold text-sm border-b-[1.5px] border-black py-1">Tax Invoice</div>
 
       {/* Header: company + buyer | invoice meta + terms */}
-      <div className="grid grid-cols-2 border-b border-black">
-        <div className="border-r border-black flex flex-col">
+      <div className="grid grid-cols-2 border-b-[1.5px] border-black">
+        <div className="border-r-[1.5px] border-black flex flex-col">
           {/* Seller — company legal name only */}
-          <div className="p-2 border-b border-black">
+          <div className="p-2 border-b-[1.5px] border-black">
             <div className="font-bold text-sm">{companyName}</div>
             {companyAddress && (
               <div className="whitespace-pre-line">{companyAddress}</div>
@@ -134,6 +134,9 @@ export default function InvoiceTemplate({ invoice, innerRef, className = "" }) {
             {inv.buyer_address && (
               <div className="whitespace-pre-line">{inv.buyer_address}</div>
             )}
+            {inv.buyer_work_site && (
+              <div className="whitespace-pre-line text-[11px] font-semibold mt-1">Work Site: {inv.buyer_work_site}</div>
+            )}
             {inv.buyer_gstin && <div>GSTIN/UIN: {inv.buyer_gstin}</div>}
             <div>
               State Name : {inv.buyer_state_name || ""}, Code : {inv.buyer_state_code || ""}
@@ -143,72 +146,50 @@ export default function InvoiceTemplate({ invoice, innerRef, className = "" }) {
 
         <div className="flex flex-col">
           <div className="grid grid-cols-2 flex-1">
-            <div className="border-b border-r border-black p-1">
+            <div className="border-b-[1.5px] border-r-[1.5px] border-black px-1.5 py-1.5">
               Invoice No.
               <br />
               <span className="font-bold">{inv.invoice_no}</span>
             </div>
-            <div className="border-b border-black p-1">
+            <div className="border-b-[1.5px] border-black px-1.5 py-1.5">
               Dated
               <br />
               <span className="font-bold">{formatDate(inv.date)}</span>
             </div>
-            <div className="border-b border-r border-black p-1">
+            <div className="border-b-[1.5px] border-r-[1.5px] border-black px-1.5 py-1.5">
               Delivery Note
               <br />
               <span className="font-bold">{inv.delivery_note || ""}</span>
             </div>
-            <div className="border-b border-black p-1">
+            <div className="border-b-[1.5px] border-black px-1.5 py-1.5">
               Mode/Terms of Payment
               <br />
               <span className="font-bold">{inv.payment_terms || ""}</span>
             </div>
-            <div className="border-b border-r border-black p-1">
-              Reference No. &amp; Date.
-              <br />
-              <span className="font-bold">{inv.reference_no || ""}</span>
-            </div>
-            <div className="border-b border-black p-1">
-              Other References
-              <br />
-              <span className="font-bold">{inv.other_references || ""}</span>
-            </div>
-            <div className="border-b border-r border-black p-1">
+            <div className="border-b-[1.5px] border-r-[1.5px] border-black px-1.5 py-1.5">
               Buyer&apos;s Order No.
               <br />
               <span className="font-bold">{inv.buyer_order_no || ""}</span>
             </div>
-            <div className="border-b border-black p-1">
+            <div className="border-b-[1.5px] border-black px-1.5 py-1.5">
               Dated
               <br />
               <span className="font-bold">
                 {inv.buyer_order_date ? formatDate(inv.buyer_order_date) : ""}
               </span>
             </div>
-            <div className="border-b border-r border-black p-1">
-              Dispatch Doc No.
-              <br />
-              <span className="font-bold">{inv.dispatch_doc_no || ""}</span>
-            </div>
-            <div className="border-b border-black p-1">
-              Delivery Note Date
-              <br />
-              <span className="font-bold">
-                {inv.delivery_note_date ? formatDate(inv.delivery_note_date) : ""}
-              </span>
-            </div>
-            <div className="border-b border-r border-black p-1">
+            <div className="border-b-[1.5px] border-r-[1.5px] border-black px-1.5 py-1.5">
               Dispatched through
               <br />
               <span className="font-bold">{inv.dispatch_through || ""}</span>
             </div>
-            <div className="border-b border-black p-1">
+            <div className="border-b-[1.5px] border-black px-1.5 py-1.5">
               Destination
               <br />
               <span className="font-bold">{inv.destination || ""}</span>
             </div>
           </div>
-          <div className="p-1 min-h-[48px]">
+          <div className="px-1.5 py-1.5 min-h-[48px]">
             Terms of Delivery
             <br />
             <span className="font-bold">{inv.terms_of_delivery || ""}</span>
@@ -217,148 +198,151 @@ export default function InvoiceTemplate({ invoice, innerRef, className = "" }) {
       </div>
 
       {/* Items */}
-      <table className="w-full border-collapse border-b border-black table-fixed">
+      <table className="w-full border-collapse border-b-[1.5px] border-black table-fixed">
         <thead>
-          <tr className="border-b border-black text-center">
-            <th className="border-r border-black w-8 p-1 font-normal">
+          <tr className="border-b-[1.5px] border-black text-center">
+            <th className="border-r-[1.5px] border-black w-8 px-1.5 py-1.5 font-semibold">
               SI
               <br />
               No.
             </th>
-            <th className="border-r border-black p-1 font-normal">
+            <th className="border-r-[1.5px] border-black px-1.5 py-1.5 font-semibold">
               Description of
               <br />
               Goods and Services
             </th>
-            <th className="border-r border-black w-20 p-1 font-normal">HSN/SAC</th>
-            <th className="border-r border-black w-16 p-1 font-normal">
+            <th className="border-r-[1.5px] border-black w-20 px-1.5 py-1.5 font-semibold">HSN/SAC</th>
+            <th className="border-r-[1.5px] border-black w-16 px-1.5 py-1.5 font-semibold">
               GST
               <br />
               Rate
             </th>
-            <th className="border-r border-black w-20 p-1 font-normal">Quantity</th>
-            <th className="border-r border-black w-20 p-1 font-normal">Rate</th>
-            <th className="border-r border-black w-10 p-1 font-normal">per</th>
-            <th className="w-24 p-1 font-normal">Amount</th>
+            <th className="border-r-[1.5px] border-black w-20 px-1.5 py-1.5 font-semibold">Quantity</th>
+            <th className="border-r-[1.5px] border-black w-20 px-1.5 py-1.5 font-semibold">Rate</th>
+            <th className="border-r-[1.5px] border-black w-10 px-1.5 py-1.5 font-semibold">per</th>
+            <th className="w-24 px-1.5 py-1.5 font-semibold">Amount</th>
           </tr>
         </thead>
         <tbody>
           {items.map((item, idx) => (
             <tr key={idx} className="align-top">
-              <td className="border-r border-black text-center p-1 border-b-transparent border-t-transparent">
+              <td className="border-r-[1.5px] border-black text-center px-1.5 py-1.5 border-b-transparent border-t-transparent">
                 {idx + 1}
               </td>
-              <td className="border-r border-black p-1 border-b-transparent border-t-transparent">
+              <td className="border-r-[1.5px] border-black px-1.5 py-1.5 border-b-transparent border-t-transparent">
                 <span className="font-bold">{item.description}</span>
+                {item.narration && (
+                  <div className="italic text-[10px] mt-0.5 text-slate-700 whitespace-pre-line">{item.narration}</div>
+                )}
               </td>
-              <td className="border-r border-black text-center p-1 border-b-transparent border-t-transparent">
+              <td className="border-r-[1.5px] border-black text-center px-1.5 py-1.5 border-b-transparent border-t-transparent">
                 {item.hsn_sac || ""}
               </td>
-              <td className="border-r border-black text-center p-1 border-b-transparent border-t-transparent">
+              <td className="border-r-[1.5px] border-black text-center px-1.5 py-1.5 border-b-transparent border-t-transparent">
                 {item.gst_rate ? `${parseFloat(item.gst_rate)} %` : ""}
               </td>
-              <td className="border-r border-black text-right p-1 font-bold border-b-transparent border-t-transparent">
-                {item.quantity ? `${parseFloat(item.quantity).toFixed(2)} ${item.per || ""}` : ""}
+              <td className="border-r-[1.5px] border-black text-right px-1.5 py-1.5 font-bold border-b-transparent border-t-transparent">
+                {item.quantity ? `${parseFloat(item.quantity).toFixed(2)}` : ""}
               </td>
-              <td className="border-r border-black text-right p-1 border-b-transparent border-t-transparent">
+              <td className="border-r-[1.5px] border-black text-right px-1.5 py-1.5 border-b-transparent border-t-transparent">
                 {item.rate ? fmt(item.rate) : ""}
               </td>
-              <td className="border-r border-black text-center p-1 border-b-transparent border-t-transparent">
+              <td className="border-r-[1.5px] border-black text-center px-1.5 py-1.5 border-b-transparent border-t-transparent">
                 {item.quantity ? item.per || "" : ""}
               </td>
-              <td className="text-right p-1 font-bold border-b-transparent border-t-transparent">
+              <td className="text-right px-1.5 py-1.5 font-bold border-b-transparent border-t-transparent">
                 {fmt(item.amount)}
               </td>
             </tr>
           ))}
 
           <tr className="h-24">
-            <td className="border-r border-black border-b-transparent border-t-transparent" />
-            <td className="border-r border-black border-b-transparent border-t-transparent" />
-            <td className="border-r border-black border-b-transparent border-t-transparent" />
-            <td className="border-r border-black border-b-transparent border-t-transparent" />
-            <td className="border-r border-black border-b-transparent border-t-transparent" />
-            <td className="border-r border-black border-b-transparent border-t-transparent" />
-            <td className="border-r border-black border-b-transparent border-t-transparent" />
+            <td className="border-r-[1.5px] border-black border-b-transparent border-t-transparent" />
+            <td className="border-r-[1.5px] border-black border-b-transparent border-t-transparent" />
+            <td className="border-r-[1.5px] border-black border-b-transparent border-t-transparent" />
+            <td className="border-r-[1.5px] border-black border-b-transparent border-t-transparent" />
+            <td className="border-r-[1.5px] border-black border-b-transparent border-t-transparent" />
+            <td className="border-r-[1.5px] border-black border-b-transparent border-t-transparent" />
+            <td className="border-r-[1.5px] border-black border-b-transparent border-t-transparent" />
             <td className="border-b-transparent border-t-transparent" />
           </tr>
 
           <tr>
-            <td className="border-r border-black border-t-transparent" />
-            <td className="border-r border-black border-t-transparent" />
-            <td className="border-r border-black border-t-transparent" />
-            <td className="border-r border-black border-t-transparent" />
-            <td className="border-r border-black border-t-transparent" />
-            <td className="border-r border-black border-t-transparent" />
-            <td className="border-r border-black border-t-transparent" />
-            <td className="text-right p-1 font-bold border-t border-black">
+            <td className="border-r-[1.5px] border-black border-t-transparent" />
+            <td className="border-r-[1.5px] border-black border-t-transparent" />
+            <td className="border-r-[1.5px] border-black border-t-transparent" />
+            <td className="border-r-[1.5px] border-black border-t-transparent" />
+            <td className="border-r-[1.5px] border-black border-t-transparent" />
+            <td className="border-r-[1.5px] border-black border-t-transparent" />
+            <td className="border-r-[1.5px] border-black border-t-transparent" />
+            <td className="text-right px-1.5 py-1.5 font-bold border-t-[1.5px] border-black">
               {fmt(inv.total_taxable_amount)}
             </td>
           </tr>
 
           {parseFloat(inv.total_cgst) > 0 && (
             <tr>
-              <td className="border-r border-black border-t-transparent border-b-transparent" />
-              <td className="border-r border-black text-right p-1 pr-6 italic border-t-transparent border-b-transparent">
+              <td className="border-r-[1.5px] border-black border-t-transparent border-b-transparent" />
+              <td className="border-r-[1.5px] border-black text-right px-1.5 py-1.5 pr-6 italic border-t-transparent border-b-transparent">
                 Output Cgst
               </td>
-              <td className="border-r border-black border-t-transparent border-b-transparent" />
-              <td className="border-r border-black border-t-transparent border-b-transparent" />
-              <td className="border-r border-black border-t-transparent border-b-transparent" />
-              <td className="border-r border-black border-t-transparent border-b-transparent" />
-              <td className="border-r border-black border-t-transparent border-b-transparent" />
-              <td className="text-right p-1 border-t-transparent border-b-transparent">
+              <td className="border-r-[1.5px] border-black border-t-transparent border-b-transparent" />
+              <td className="border-r-[1.5px] border-black border-t-transparent border-b-transparent" />
+              <td className="border-r-[1.5px] border-black border-t-transparent border-b-transparent" />
+              <td className="border-r-[1.5px] border-black border-t-transparent border-b-transparent" />
+              <td className="border-r-[1.5px] border-black border-t-transparent border-b-transparent" />
+              <td className="text-right px-1.5 py-1.5 border-t-transparent border-b-transparent">
                 {fmt(inv.total_cgst)}
               </td>
             </tr>
           )}
           {parseFloat(inv.total_sgst) > 0 && (
             <tr>
-              <td className="border-r border-black border-t-transparent border-b-transparent" />
-              <td className="border-r border-black text-right p-1 pr-6 italic border-t-transparent border-b-transparent">
+              <td className="border-r-[1.5px] border-black border-t-transparent border-b-transparent" />
+              <td className="border-r-[1.5px] border-black text-right px-1.5 py-1.5 pr-6 italic border-t-transparent border-b-transparent">
                 Output Sgst
               </td>
-              <td className="border-r border-black border-t-transparent border-b-transparent" />
-              <td className="border-r border-black border-t-transparent border-b-transparent" />
-              <td className="border-r border-black border-t-transparent border-b-transparent" />
-              <td className="border-r border-black border-t-transparent border-b-transparent" />
-              <td className="border-r border-black border-t-transparent border-b-transparent" />
-              <td className="text-right p-1 border-t-transparent border-b-transparent">
+              <td className="border-r-[1.5px] border-black border-t-transparent border-b-transparent" />
+              <td className="border-r-[1.5px] border-black border-t-transparent border-b-transparent" />
+              <td className="border-r-[1.5px] border-black border-t-transparent border-b-transparent" />
+              <td className="border-r-[1.5px] border-black border-t-transparent border-b-transparent" />
+              <td className="border-r-[1.5px] border-black border-t-transparent border-b-transparent" />
+              <td className="text-right px-1.5 py-1.5 border-t-transparent border-b-transparent">
                 {fmt(inv.total_sgst)}
               </td>
             </tr>
           )}
           {parseFloat(inv.round_off) !== 0 && (
             <tr>
-              <td className="border-r border-black border-t-transparent border-b-transparent" />
-              <td className="border-r border-black text-right p-1 pr-6 italic uppercase border-t-transparent border-b-transparent">
+              <td className="border-r-[1.5px] border-black border-t-transparent border-b-transparent" />
+              <td className="border-r-[1.5px] border-black text-right px-1.5 py-1.5 pr-6 italic uppercase border-t-transparent border-b-transparent">
                 ROUND OFF
               </td>
-              <td className="border-r border-black border-t-transparent border-b-transparent" />
-              <td className="border-r border-black border-t-transparent border-b-transparent" />
-              <td className="border-r border-black border-t-transparent border-b-transparent" />
-              <td className="border-r border-black border-t-transparent border-b-transparent" />
-              <td className="border-r border-black border-t-transparent border-b-transparent" />
-              <td className="text-right p-1 border-t-transparent border-b-transparent">
+              <td className="border-r-[1.5px] border-black border-t-transparent border-b-transparent" />
+              <td className="border-r-[1.5px] border-black border-t-transparent border-b-transparent" />
+              <td className="border-r-[1.5px] border-black border-t-transparent border-b-transparent" />
+              <td className="border-r-[1.5px] border-black border-t-transparent border-b-transparent" />
+              <td className="border-r-[1.5px] border-black border-t-transparent border-b-transparent" />
+              <td className="text-right px-1.5 py-1.5 border-t-transparent border-b-transparent">
                 {fmt(inv.round_off)}
               </td>
             </tr>
           )}
 
-          <tr className="border-t border-black font-bold">
-            <td colSpan={4} className="border-r border-black text-right p-1 pr-4">
+          <tr className="border-t-[1.5px] border-black font-bold">
+            <td colSpan={4} className="border-r-[1.5px] border-black text-right px-1.5 py-1.5 pr-4">
               Total
             </td>
-            <td className="border-r border-black p-1 text-center">
+            <td className="border-r-[1.5px] border-black px-1.5 py-1.5 text-center">
               {totalQty > 0 ? `${totalQty} ${primaryUnit}` : ""}
             </td>
-            <td colSpan={2} className="border-r border-black" />
-            <td className="p-1 text-right text-sm font-bold">₹ {fmt(inv.grand_total)}</td>
+            <td colSpan={2} className="border-r-[1.5px] border-black" />
+            <td className="px-1.5 py-1.5 text-right text-sm font-bold">₹ {fmt(inv.grand_total)}</td>
           </tr>
         </tbody>
       </table>
 
-      <div className="border-b border-black p-1 px-2 flex justify-between items-end">
+      <div className="border-b-[1.5px] border-black p-2 flex justify-between items-end">
         <div>
           <div>Amount Chargeable (in words)</div>
           <div className="font-bold">{inv.amount_in_words}</div>
@@ -367,71 +351,71 @@ export default function InvoiceTemplate({ invoice, innerRef, className = "" }) {
       </div>
 
       {Object.keys(taxGroups).length > 0 && (
-        <table className="w-full border-collapse border-b border-black text-center table-fixed">
+        <table className="w-full border-collapse border-b-[1.5px] border-black text-center table-fixed">
           <thead>
             <tr>
-              <th className="border-r border-b border-black p-1 font-normal w-[25%]" rowSpan={2}>
+              <th className="border-r border-b-[1.5px] border-black px-1.5 py-1.5 font-semibold w-[25%]" rowSpan={2}>
                 HSN/SAC
               </th>
-              <th className="border-r border-b border-black p-1 font-normal w-[15%]" rowSpan={2}>
+              <th className="border-r border-b-[1.5px] border-black px-1.5 py-1.5 font-semibold w-[15%]" rowSpan={2}>
                 Taxable
                 <br />
                 Value
               </th>
-              <th className="border-r border-b border-black p-1 font-normal w-[25%]" colSpan={2}>
+              <th className="border-r border-b-[1.5px] border-black px-1.5 py-1.5 font-semibold w-[25%]" colSpan={2}>
                 Central Tax
               </th>
-              <th className="border-r border-b border-black p-1 font-normal w-[25%]" colSpan={2}>
+              <th className="border-r border-b-[1.5px] border-black px-1.5 py-1.5 font-semibold w-[25%]" colSpan={2}>
                 State Tax
               </th>
-              <th className="border-b border-black p-1 font-normal w-[10%]" rowSpan={2}>
+              <th className="border-b-[1.5px] border-black px-1.5 py-1.5 font-semibold w-[10%]" rowSpan={2}>
                 Total
                 <br />
                 Tax Amount
               </th>
             </tr>
             <tr>
-              <th className="border-r border-b border-black p-1 font-normal">Rate</th>
-              <th className="border-r border-b border-black p-1 font-normal">Amount</th>
-              <th className="border-r border-b border-black p-1 font-normal">Rate</th>
-              <th className="border-r border-b border-black p-1 font-normal">Amount</th>
+              <th className="border-r border-b-[1.5px] border-black px-1.5 py-1.5 font-semibold">Rate</th>
+              <th className="border-r border-b-[1.5px] border-black px-1.5 py-1.5 font-semibold">Amount</th>
+              <th className="border-r border-b-[1.5px] border-black px-1.5 py-1.5 font-semibold">Rate</th>
+              <th className="border-r border-b-[1.5px] border-black px-1.5 py-1.5 font-semibold">Amount</th>
             </tr>
           </thead>
           <tbody>
             {Object.values(taxGroups).map((tg, idx) => (
-              <tr key={idx} className="border-b border-black">
-                <td className="border-r border-black p-1 text-left">{tg.hsn}</td>
-                <td className="border-r border-black p-1 text-right">{fmt(tg.taxable)}</td>
-                <td className="border-r border-black p-1">{tg.gstRate / 2}%</td>
-                <td className="border-r border-black p-1 text-right">{fmt(tg.cgstAmt)}</td>
-                <td className="border-r border-black p-1">{tg.gstRate / 2}%</td>
-                <td className="border-r border-black p-1 text-right">{fmt(tg.sgstAmt)}</td>
-                <td className="p-1 text-right">{fmt(tg.totalTax)}</td>
+              <tr key={idx} className="border-b-[1.5px] border-black">
+                <td className="border-r-[1.5px] border-black px-1.5 py-1.5 text-left">{tg.hsn}</td>
+                <td className="border-r-[1.5px] border-black px-1.5 py-1.5 text-right">{fmt(tg.taxable)}</td>
+                <td className="border-r-[1.5px] border-black px-1.5 py-1.5">{tg.gstRate / 2}%</td>
+                <td className="border-r-[1.5px] border-black px-1.5 py-1.5 text-right">{fmt(tg.cgstAmt)}</td>
+                <td className="border-r-[1.5px] border-black px-1.5 py-1.5">{tg.gstRate / 2}%</td>
+                <td className="border-r-[1.5px] border-black px-1.5 py-1.5 text-right">{fmt(tg.sgstAmt)}</td>
+                <td className="px-1.5 py-1.5 text-right">{fmt(tg.totalTax)}</td>
               </tr>
             ))}
             <tr className="font-bold">
-              <td className="border-r border-black p-1 text-right">Total</td>
-              <td className="border-r border-black p-1 text-right">{fmt(inv.total_taxable_amount)}</td>
-              <td className="border-r border-black p-1" />
-              <td className="border-r border-black p-1 text-right">{fmt(inv.total_cgst)}</td>
-              <td className="border-r border-black p-1" />
-              <td className="border-r border-black p-1 text-right">{fmt(inv.total_sgst)}</td>
-              <td className="p-1 text-right">{fmt(taxTotal)}</td>
+              <td className="border-r-[1.5px] border-black px-1.5 py-1.5 text-right">Total</td>
+              <td className="border-r-[1.5px] border-black px-1.5 py-1.5 text-right">{fmt(inv.total_taxable_amount)}</td>
+              <td className="border-r-[1.5px] border-black px-1.5 py-1.5" />
+              <td className="border-r-[1.5px] border-black px-1.5 py-1.5 text-right">{fmt(inv.total_cgst)}</td>
+              <td className="border-r-[1.5px] border-black px-1.5 py-1.5" />
+              <td className="border-r-[1.5px] border-black px-1.5 py-1.5 text-right">{fmt(inv.total_sgst)}</td>
+              <td className="px-1.5 py-1.5 text-right">{fmt(taxTotal)}</td>
             </tr>
           </tbody>
         </table>
       )}
 
-      <div className="p-1 px-2 border-b border-black flex">
+      <div className="p-2 border-b-[1.5px] border-black flex">
         <span className="mr-2">Tax Amount (in words) :</span>
         <span className="font-bold">
           {Object.keys(taxGroups).length > 0 ? numberToWords(taxTotal) : "INR Zero Only"}
         </span>
       </div>
 
-      <div className="flex justify-between p-1 px-2">
-        <div className="w-1/2 flex flex-col justify-end text-[10px] pr-2">
-          <div>Declaration</div>
+      <div className="flex justify-between p-2">
+        <div className="w-1/2 flex flex-col justify-end text-[11px] pr-2 mt-4">
+          <div className="font-bold underline mb-1">Declaration</div>
           <div>
             We declare that this invoice shows the actual price of
             <br />
@@ -456,16 +440,24 @@ export default function InvoiceTemplate({ invoice, innerRef, className = "" }) {
             <div className="font-bold">: {inv.bank_ifsc || ""}</div>
           </div>
 
-          <div className="mt-2 border border-black p-1 text-right flex flex-col justify-between h-20">
-            <div className="font-bold">for {companyName}</div>
+          <div className="mt-2 border-[1.5px] border-black px-1.5 py-1.5 text-right flex flex-col justify-between h-20">
+            <div className="font-bold">For {companyName}</div>
             <div>Authorised Signatory</div>
           </div>
         </div>
       </div>
 
-      <div className="text-center py-1 border-t border-black text-[10px]">
+      <div className="text-center py-1 border-t-[1.5px] border-black text-[10px]">
         This is a Computer Generated Invoice
       </div>
     </div>
   );
 }
+
+
+
+
+
+
+
+
