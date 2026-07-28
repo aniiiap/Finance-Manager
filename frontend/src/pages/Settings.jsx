@@ -2,11 +2,13 @@ import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/card"
 import { Button } from "../components/ui/button"
 import { useAuth } from "../context/AuthContext"
+import { useData } from "../context/DataContext"
 import { apiFetch } from '../lib/api'
 
 
 export default function Settings() {
   const { token, user } = useAuth()
+  const { companyInfo, refreshData } = useData()
   const [settings, setSettings] = useState({
     name: "",
     address: "",
@@ -21,6 +23,11 @@ export default function Settings() {
   })
   const [isLoading, setIsLoading] = useState(false)
   const [message, setMessage] = useState("")
+
+  const [logoFile, setLogoFile] = useState(null)
+  const [signatureFile, setSignatureFile] = useState(null)
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false)
+  const [isUploadingSignature, setIsUploadingSignature] = useState(false)
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -78,6 +85,54 @@ export default function Settings() {
     setSettings(prev => ({ ...prev, [e.target.name]: e.target.value }))
   }
 
+  const handleUploadLogo = async () => {
+    if (!logoFile) return
+    setIsUploadingLogo(true)
+    const formData = new FormData()
+    formData.append('file', logoFile)
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/data/company-info/upload-logo`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+        body: formData
+      })
+      if (res.ok) {
+        refreshData()
+        setLogoFile(null)
+      } else {
+        alert('Upload failed')
+      }
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setIsUploadingLogo(false)
+    }
+  }
+
+  const handleUploadSignature = async () => {
+    if (!signatureFile) return
+    setIsUploadingSignature(true)
+    const formData = new FormData()
+    formData.append('file', signatureFile)
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/data/company-info/upload-signature`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+        body: formData
+      })
+      if (res.ok) {
+        refreshData()
+        setSignatureFile(null)
+      } else {
+        alert('Upload failed')
+      }
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setIsUploadingSignature(false)
+    }
+  }
+
   if (user?.role !== 'ADMIN' && user?.role !== 'SUPER_ADMIN') {
     return <div className="p-4">You do not have permission to view this page.</div>
   }
@@ -88,6 +143,51 @@ export default function Settings() {
         <h2 className="text-2xl font-bold tracking-tight">Settings</h2>
         <p className="text-sm text-slate-500">Manage your application preferences and company profile.</p>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Company Branding</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-lg font-medium">Company Logo</h3>
+                <p className="text-sm text-slate-500">Used on letterheads and invoices.</p>
+              </div>
+              {companyInfo?.logo_url && (
+                <div className="border rounded-md p-4 bg-slate-50 flex justify-center items-center h-32">
+                  <img src={companyInfo.logo_url} alt="Company Logo" className="max-h-full max-w-full object-contain" crossOrigin="anonymous" />
+                </div>
+              )}
+              <div className="flex items-center gap-4">
+                <input type="file" accept="image/*" onChange={(e) => setLogoFile(e.target.files[0])} className="text-sm w-full border p-1.5 rounded-md" />
+                <Button onClick={handleUploadLogo} disabled={!logoFile || isUploadingLogo} size="sm">
+                  {isUploadingLogo ? 'Uploading...' : 'Upload'}
+                </Button>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-lg font-medium">Authorized Signature</h3>
+                <p className="text-sm text-slate-500">Used on invoices and official documents.</p>
+              </div>
+              {companyInfo?.signature_url && (
+                <div className="border rounded-md p-4 bg-slate-50 flex justify-center items-center h-32">
+                  <img src={companyInfo.signature_url} alt="Company Signature" className="max-h-full max-w-full object-contain" crossOrigin="anonymous" />
+                </div>
+              )}
+              <div className="flex items-center gap-4">
+                <input type="file" accept="image/*" onChange={(e) => setSignatureFile(e.target.files[0])} className="text-sm w-full border p-1.5 rounded-md" />
+                <Button onClick={handleUploadSignature} disabled={!signatureFile || isUploadingSignature} size="sm">
+                  {isUploadingSignature ? 'Uploading...' : 'Upload'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <form onSubmit={handleSave}>
         <Card>

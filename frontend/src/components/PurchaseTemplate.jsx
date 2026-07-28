@@ -73,6 +73,8 @@ function resolveSellerDisplay(rawName, rawAddress) {
   };
 }
 
+import { useData } from "../context/DataContext";
+
 /**
  * Tally-style Tax purchase template matching the sample format.
  * Seller header shows company legal name only — never contact / personal name.
@@ -80,6 +82,8 @@ function resolveSellerDisplay(rawName, rawAddress) {
 export default function PurchaseTemplate({ purchase, innerRef, className = "" }) {
   const inv = purchase;
   const items = inv.items || [];
+  const dataContext = useData();
+  const companyInfo = dataContext?.companyInfo || {};
 
   const taxGroups = {};
   items.forEach((item) => {
@@ -108,7 +112,7 @@ export default function PurchaseTemplate({ purchase, innerRef, className = "" })
   return (
     <div
       ref={innerRef}
-      className={`purchase-container bg-white text-black text-[11px] leading-tight font-sans ${className}`}
+      className={`purchase-container bg-white text-black text-[12px] leading-relaxed font-sans pb-2 ${className}`}
     >
       <div className="text-center font-bold text-lg mb-2">INVOICE</div>
 
@@ -302,9 +306,14 @@ export default function PurchaseTemplate({ purchase, innerRef, className = "" })
           <div className="w-[40%] flex flex-col justify-between items-end border-l-[1.5px] border-black">
             <div className="italic pr-2 pt-1 text-xs">E. &amp; O.E</div>
             
-            <div className="w-full mt-4 border-t-[1.5px] border-black p-2 text-right flex flex-col justify-between h-24">
-              <div className="font-bold">For {inv.authorised_signatory_for || inv.vendor_name}</div>
-              <div>Authorised Signatory</div>
+            <div className="w-full mt-4 border-t-[1.5px] border-black p-2 text-right flex flex-col justify-between min-h-[90px] relative">
+              <div className="font-bold relative z-10">For {inv.authorised_signatory_for || inv.vendor_name}</div>
+              {companyInfo?.signature_url && (
+                <div className="absolute inset-0 flex items-center justify-end pr-2 pt-4 opacity-90 pointer-events-none">
+                  <img src={companyInfo.signature_url} alt="Signature" className="max-h-12 max-w-[120px] object-contain" crossOrigin="anonymous" />
+                </div>
+              )}
+              <div className="relative z-10 mt-10">Authorised Signatory</div>
             </div>
           </div>
         </div>

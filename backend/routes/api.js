@@ -3,6 +3,8 @@ const router = express.Router();
 const pool = require('../database/db');
 const { verifyToken, verifyAdmin, requireModule, ensureProjectAccess } = require('../middleware/auth');
 const bcrypt = require('bcrypt');
+const multer = require('multer');
+const upload = multer({ storage: multer.memoryStorage() });
 
 const requireClient = (req, res, next) => {
   if (req.user.role === 'SUPER_ADMIN') {
@@ -407,6 +409,22 @@ router.put('/companies/:id/status', verifyToken, verifyAdmin, async (req, res) =
   }
 });
 
+router.post('/companies/:id/renew', verifyToken, verifyAdmin, async (req, res) => {
+  if (req.user.role !== 'SUPER_ADMIN') return res.status(403).json({ error: 'Forbidden' });
+  try {
+    const { id } = req.params;
+    // Extend expiry by 1 year from either now or the current expiry date
+    await pool.query(`
+      UPDATE companies 
+      SET expires_at = GREATEST(CURRENT_TIMESTAMP, COALESCE(expires_at, CURRENT_TIMESTAMP)) + INTERVAL '1 year' 
+      WHERE id = $1
+    `, [id]);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 router.put('/companies/:id', verifyToken, verifyAdmin, async (req, res) => {
   if (req.user.role !== 'SUPER_ADMIN') return res.status(403).json({ error: 'Forbidden' });
   const client = await pool.connect();
@@ -548,12 +566,64 @@ router.get('/company-info', verifyToken, async (req, res) => {
   try {
     if (!req.user.company_id) return res.json(null);
     const result = await pool.query(`
-      SELECT c.name as company_name, u.name as admin_name, c.payment_methods 
+      SELECT c.name as company_name, u.name as admin_name, c.payment_methods, c.logo_url, c.signature_url,
+             c.address, c.gstin, c.contact_email, u.phone as contact_phone
       FROM companies c
       LEFT JOIN users u ON u.company_id = c.id AND u.role = 'ADMIN'
       WHERE c.id = $1 LIMIT 1
     `, [req.user.company_id]);
     res.json(result.rows[0]);
+  } catch(e) { res.status(500).json({error: 'Server error'}); }
+});
+
+router.put('/company-info', verifyToken, async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const { company_name, address, gstin, contact_email, contact_phone } = req.body;
+    await client.query('BEGIN');
+    
+    await client.query(
+      `UPDATE companies SET 
+         name = COALESCE(NULLIF($1, ''), name), 
+         address = COALESCE($2, address), 
+         gstin = COALESCE($3, gstin), 
+         contact_email = COALESCE($4, contact_email) 
+       WHERE id = $5`,
+      [company_name, address, gstin, contact_email, req.user.company_id]
+    );
+
+    if (contact_phone !== undefined) {
+      await client.query(
+        "UPDATE users SET phone = $1 WHERE company_id = $2 AND role = 'ADMIN'",
+        [contact_phone, req.user.company_id]
+      );
+    }
+    
+    await client.query('COMMIT');
+    res.json({ success: true });
+  } catch(e) { 
+    await client.query('ROLLBACK');
+    res.status(500).json({error: 'Server error'}); 
+  } finally {
+    client.release();
+  }
+});
+
+router.post('/company-info/upload-logo', verifyToken, verifyAdmin, upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No file provided' });
+    const base64Data = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+    await pool.query('UPDATE companies SET logo_url = $1 WHERE id = $2', [base64Data, req.user.company_id]);
+    res.json({ success: true, logo_url: base64Data });
+  } catch(e) { res.status(500).json({error: 'Server error'}); }
+});
+
+router.post('/company-info/upload-signature', verifyToken, verifyAdmin, upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No file provided' });
+    const base64Data = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+    await pool.query('UPDATE companies SET signature_url = $1 WHERE id = $2', [base64Data, req.user.company_id]);
+    res.json({ success: true, signature_url: base64Data });
   } catch(e) { res.status(500).json({error: 'Server error'}); }
 });
 

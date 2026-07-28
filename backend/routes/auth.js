@@ -24,11 +24,15 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    // Check if company is suspended
+    // Check if company is suspended or expired
     if (user.company_id) {
-      const companyRes = await pool.query('SELECT status FROM companies WHERE id = $1', [user.company_id]);
-      if (companyRes.rows[0]?.status === 'Suspended') {
+      const companyRes = await pool.query('SELECT status, expires_at FROM companies WHERE id = $1', [user.company_id]);
+      const company = companyRes.rows[0];
+      if (company?.status === 'Suspended') {
         return res.status(403).json({ error: 'Your company account has been suspended. Please contact the platform administrator.' });
+      }
+      if (company?.expires_at && new Date(company.expires_at) < new Date()) {
+        return res.status(403).json({ error: 'Your account subscription has expired. Please contact support.' });
       }
     }
 
@@ -131,9 +135,9 @@ router.post('/onboard-company', verifyToken, async (req, res) => {
     // Start transaction
     await pool.query('BEGIN');
 
-    // Create Company
+    // Create Company with 1 year expiration
     const compResult = await pool.query(
-      'INSERT INTO companies (name, contact_name, contact_email) VALUES ($1, $2, $3) RETURNING id',
+      'INSERT INTO companies (name, contact_name, contact_email, expires_at) VALUES ($1, $2, $3, CURRENT_TIMESTAMP + INTERVAL \'1 year\') RETURNING id',
       [company_name, contact_name, contact_email]
     );
     const companyId = compResult.rows[0].id;

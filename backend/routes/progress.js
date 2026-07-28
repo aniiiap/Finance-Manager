@@ -23,45 +23,14 @@ const s3 = new S3Client({
 
 const upload = multer({ storage: multer.memoryStorage() });
 
-router.get('/folders', async (req, res) => {
-  try {
-    const result = await pool.query('SELECT * FROM progress_folders WHERE company_id = $1 ORDER BY created_at DESC', [req.user.company_id]);
-    res.json(result.rows);
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch folders' });
-  }
-});
-
-router.post('/folders', async (req, res) => {
-  try {
-    const { name, type } = req.body;
-    const result = await pool.query(
-      'INSERT INTO progress_folders (company_id, name, type) VALUES ($1, $2, $3) RETURNING *',
-      [req.user.company_id, name, type]
-    );
-    res.status(201).json(result.rows[0]);
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to create folder' });
-  }
-});
-
-router.delete('/folders/:id', async (req, res) => {
-  try {
-    await pool.query('DELETE FROM progress_folders WHERE id = $1 AND company_id = $2', [req.params.id, req.user.company_id]);
-    res.json({ message: 'Folder deleted' });
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to delete folder' });
-  }
-});
-
 router.get('/files', async (req, res) => {
   try {
-    const { folder_id } = req.query;
+    const { project_id } = req.query;
     let query = 'SELECT * FROM progress_files WHERE company_id = $1';
     let params = [req.user.company_id];
-    if (folder_id) {
-      query += ' AND folder_id = $2';
-      params.push(folder_id);
+    if (project_id) {
+      query += ' AND project_id = $2';
+      params.push(project_id);
     }
     query += ' ORDER BY created_at DESC';
     const result = await pool.query(query, params);
@@ -73,12 +42,12 @@ router.get('/files', async (req, res) => {
 
 router.post('/files', upload.single('file'), async (req, res) => {
   try {
-    const { folder_id, upload_date } = req.body;
+    const { project_id, upload_date } = req.body;
     const dateVal = upload_date || new Date().toISOString();
-    if (!req.file || !folder_id) return res.status(400).json({ error: 'Missing file or folder_id' });
+    if (!req.file || !project_id) return res.status(400).json({ error: 'Missing file or project_id' });
 
     const ext = path.extname(req.file.originalname);
-    const fileKey = `progress/${req.user.company_id}/${folder_id}/${crypto.randomBytes(16).toString('hex')}${ext}`;
+    const fileKey = `progress/${req.user.company_id}/${project_id}/${crypto.randomBytes(16).toString('hex')}${ext}`;
 
     const command = new PutObjectCommand({
       Bucket: process.env.R2_BUCKET_NAME,
@@ -90,8 +59,8 @@ router.post('/files', upload.single('file'), async (req, res) => {
     await s3.send(command);
     
     const result = await pool.query(
-      'INSERT INTO progress_files (company_id, folder_id, file_name, file_url, file_key, upload_date) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-      [req.user.company_id, folder_id, req.file.originalname, '', fileKey, dateVal]
+      'INSERT INTO progress_files (company_id, project_id, file_name, file_url, file_key, upload_date) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+      [req.user.company_id, project_id, req.file.originalname, '', fileKey, dateVal]
     );
 
     res.status(201).json(result.rows[0]);

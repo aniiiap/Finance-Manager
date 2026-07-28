@@ -73,6 +73,8 @@ function resolveSellerDisplay(rawName, rawAddress) {
   };
 }
 
+import { useData } from "../context/DataContext";
+
 /**
  * Tally-style Tax Invoice template matching the sample format.
  * Seller header shows company legal name only — never contact / personal name.
@@ -80,6 +82,8 @@ function resolveSellerDisplay(rawName, rawAddress) {
 export default function InvoiceTemplate({ invoice, innerRef, className = "" }) {
   const inv = invoice;
   const items = inv.items || [];
+  const dataContext = useData();
+  const companyInfo = dataContext?.companyInfo || {};
 
   const taxGroups = {};
   items.forEach((item) => {
@@ -108,7 +112,7 @@ export default function InvoiceTemplate({ invoice, innerRef, className = "" }) {
   return (
     <div
       ref={innerRef}
-      style={{ fontFamily: "Arial, Helvetica, sans-serif", WebkitTextStroke: "0.1px black" }} className={`invoice-container border-[1.5px] border-black bg-white text-black text-[11px] leading-tight font-sans ${className}`}
+      style={{ fontFamily: "Arial, Helvetica, sans-serif", WebkitTextStroke: "0.1px black" }} className={`invoice-container border-[1.5px] border-black bg-white text-black text-[12px] leading-relaxed font-sans pb-2 ${className}`}
     >
       <div className="text-center font-bold text-sm border-b-[1.5px] border-black py-1">Tax Invoice</div>
 
@@ -440,14 +444,19 @@ export default function InvoiceTemplate({ invoice, innerRef, className = "" }) {
             <div className="font-bold">: {inv.bank_ifsc || ""}</div>
           </div>
 
-          <div className="mt-2 border-[1.5px] border-black px-1.5 py-1.5 text-right flex flex-col justify-between h-20">
-            <div className="font-bold">For {companyName}</div>
-            <div>Authorised Signatory</div>
+          <div className="mt-2 border-[1.5px] border-black px-1.5 py-1.5 text-right flex flex-col justify-between min-h-[90px] relative">
+            <div className="font-bold relative z-10">For {companyName}</div>
+            {companyInfo?.signature_url && (
+              <div className="absolute inset-0 flex items-center justify-end pr-2 pt-4 opacity-90 pointer-events-none">
+                <img src={companyInfo.signature_url} alt="Signature" className="max-h-12 max-w-[120px] object-contain" crossOrigin="anonymous" />
+              </div>
+            )}
+            <div className="relative z-10 mt-10">Authorised Signatory</div>
           </div>
         </div>
       </div>
 
-      <div className="text-center py-1 border-t-[1.5px] border-black text-[10px]">
+      <div className="text-center py-2 mt-2 border-t-[1.5px] border-black text-[11px]">
         This is a Computer Generated Invoice
       </div>
     </div>

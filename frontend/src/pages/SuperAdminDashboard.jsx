@@ -141,6 +141,24 @@ export default function SuperAdminDashboard() {
     }
   }
 
+  const handleRenewCompany = async (companyId) => {
+    if (!window.confirm("Are you sure you want to renew this company's plan for 1 year?")) return;
+    try {
+      const res = await apiFetch(`/api/data/companies/${companyId}/renew`, {
+        method: 'POST'
+      });
+      if (res.ok) {
+        const refreshed = await apiFetch('/api/data/companies');
+        setCompanies(await refreshed.json());
+      } else {
+        const data = await res.json();
+        alert(data.error || "Failed to renew company");
+      }
+    } catch (err) {
+      alert("Network error while renewing company");
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -178,6 +196,7 @@ export default function SuperAdminDashboard() {
                 <TableHead>Admin Email</TableHead>
                 <TableHead>Admin Phone</TableHead>
                 <TableHead>Active Users</TableHead>
+                <TableHead>Expires On</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Platform Actions</TableHead>
               </TableRow>
@@ -196,11 +215,27 @@ export default function SuperAdminDashboard() {
                     <TableCell className="text-slate-500">{c.contact_phone || 'N/A'}</TableCell>
                     <TableCell>{c.users_count} users</TableCell>
                     <TableCell>
+                      <div className="flex flex-col items-start gap-1">
+                        <span>{c.expires_at ? new Date(c.expires_at).toLocaleDateString() : 'N/A'}</span>
+                        {c.expires_at && new Date(c.expires_at) < new Date() && (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded-sm text-[10px] font-bold bg-red-100 text-red-700 uppercase tracking-wider">Expired</span>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
                       <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${c.status === 'Suspended' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
                         {c.status || 'Active'}
                       </span>
                     </TableCell>
                     <TableCell className="text-right flex items-center justify-end gap-2">
+                      <Button
+                        onClick={() => handleRenewCompany(c.id)}
+                        variant="outline"
+                        size="sm"
+                        className="text-purple-600 hover:text-purple-700 hover:bg-purple-50"
+                      >
+                        Renew
+                      </Button>
                       <Button
                         onClick={() => {
                           setCompanyToEdit(c)

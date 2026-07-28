@@ -572,6 +572,27 @@ export const DataProvider = ({ children }) => {
     }
   };
 
+  const updateCompanyInfo = async (info) => {
+    try {
+      const res = await apiFetch('/api/data/company-info', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(info)
+      });
+      if (res.ok) {
+        fetchData();
+        toast("Company info updated successfully!", "success");
+        return true;
+      }
+      toast("Failed to update company info", "error");
+      return false;
+    } catch (err) {
+      console.error(err);
+      toast("Error updating company info", "error");
+      return false;
+    }
+  };
+
   return (
     <DataContext.Provider value={{ 
       projects, 
@@ -612,6 +633,7 @@ export const DataProvider = ({ children }) => {
       updateLetter,
       deleteLetter,
       bulkDelete,
+      updateCompanyInfo,
       refreshData: fetchData 
     }}>
       {children}

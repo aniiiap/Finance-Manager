@@ -9,7 +9,7 @@ import { ShieldAlert, UserPlus, Shield, User } from "lucide-react"
 
 export default function AdminSettings() {
   const { user } = useAuth()
-  const { projects, users, addUser, updateUser, deleteUser } = useData() 
+  const { projects, users, addUser, updateUser, deleteUser, companyInfo, refreshData } = useData() 
   const [isUserModalOpen, setIsUserModalOpen] = useState(false)
   const [selectedRole, setSelectedRole] = useState("USER")
   const [isSubmitting, setIsSubmitting] = useState(false)

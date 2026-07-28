@@ -6,7 +6,7 @@ import { Button } from "../components/ui/button"
 import { Modal, ConfirmModal } from "../components/ui/modal"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table"
 import { ExportButtons } from "../components/ui/ExportButtons"
-import { Mail, Plus, Download, Edit2, Trash2, Search } from "lucide-react"
+import { Mail, Plus, Download, Edit2, Trash2, Search, Settings } from "lucide-react"
 import ReactQuill from 'react-quill-new'
 import 'react-quill-new/dist/quill.snow.css'
 import html2pdf from "html2pdf.js"
@@ -20,6 +20,29 @@ export default function Letters() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [letterToDelete, setLetterToDelete] = useState(null)
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false)
+  const { companyInfo, updateCompanyInfo } = useData()
+
+  const [settingsForm, setSettingsForm] = useState({
+    company_name: '', address: '', gstin: '', contact_email: '', contact_phone: ''
+  })
+
+  const handleSettingsClick = () => {
+    setSettingsForm({
+      company_name: companyInfo?.company_name || '',
+      address: companyInfo?.address || '',
+      gstin: companyInfo?.gstin || '',
+      contact_email: companyInfo?.contact_email || '',
+      contact_phone: companyInfo?.contact_phone || ''
+    })
+    setIsSettingsModalOpen(true)
+  }
+
+  const handleSettingsSubmit = async (e) => {
+    e.preventDefault()
+    const success = await updateCompanyInfo(settingsForm)
+    if (success) setIsSettingsModalOpen(false)
+  }
   
   // Form State
   const [currentLetter, setCurrentLetter] = useState(null)
@@ -90,7 +113,26 @@ export default function Letters() {
   }
 
   const handleNewClick = () => {
-    setRefNo('')
+    const currentYear = new Date().getFullYear();
+    const prefix = `REF/${currentYear}/`;
+    
+    // Find highest sequence number for current year
+    let maxSeq = 0;
+    if (letters) {
+      letters.forEach(l => {
+        if (l.ref_no && l.ref_no.startsWith(prefix)) {
+          const parts = l.ref_no.split('/');
+          const num = parseInt(parts[parts.length - 1], 10);
+          if (!isNaN(num) && num > maxSeq) {
+            maxSeq = num;
+          }
+        }
+      });
+    }
+    
+    const nextSeq = String(maxSeq + 1).padStart(3, '0');
+    setRefNo(`${prefix}${nextSeq}`);
+    
     setLetterDate(new Date().toISOString().split('T')[0])
     setContent('')
     setIsModalOpen(true)
@@ -151,6 +193,11 @@ export default function Letters() {
           {selectedIds.length > 0 && user?.role === 'ADMIN' && (
             <Button variant="destructive" onClick={handleBulkDelete} className="gap-2">
               <Trash2 className="w-4 h-4" /> Delete Selected ({selectedIds.length})
+            </Button>
+          )}
+          {(user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN') && (
+            <Button variant="outline" onClick={handleSettingsClick} className="gap-2 w-full sm:w-auto">
+              <Settings className="w-4 h-4" /> Letterhead Profile
             </Button>
           )}
           <Button onClick={handleNewClick} className="gap-2 w-full sm:w-auto">
@@ -354,6 +401,75 @@ export default function Letters() {
         title="Delete Letter"
         message="Are you sure you want to delete this letter? This action cannot be undone."
       />
+
+      {/* Settings Modal */}
+      <Modal isOpen={isSettingsModalOpen} onClose={() => setIsSettingsModalOpen(false)} title="Letterhead Profile" maxWidth="max-w-2xl">
+        <form onSubmit={handleSettingsSubmit} className="space-y-4">
+          <p className="text-sm text-slate-500">
+            These details appear on your printed letters.
+          </p>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Company Name *</label>
+            <input
+              required
+              type="text"
+              value={settingsForm.company_name}
+              onChange={(e) => setSettingsForm({ ...settingsForm, company_name: e.target.value })}
+              className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950"
+              placeholder="e.g. CPMR PROJECTS PRIVATE LIMITED"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Company Address *</label>
+            <textarea
+              required
+              value={settingsForm.address}
+              onChange={(e) => setSettingsForm({ ...settingsForm, address: e.target.value })}
+              rows={3}
+              className="flex w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950"
+              placeholder={"e.g. HOUSE NO 22\\nJATO KA MOHALLA\\nBHILWARA"}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">GSTIN</label>
+              <input 
+                type="text" 
+                value={settingsForm.gstin}
+                onChange={(e) => setSettingsForm({ ...settingsForm, gstin: e.target.value })}
+                className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950" 
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Contact Phone</label>
+              <input 
+                type="text" 
+                value={settingsForm.contact_phone}
+                onChange={(e) => setSettingsForm({ ...settingsForm, contact_phone: e.target.value })}
+                className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950" 
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Contact Email</label>
+            <input 
+              type="email" 
+              value={settingsForm.contact_email}
+              onChange={(e) => setSettingsForm({ ...settingsForm, contact_email: e.target.value })}
+              className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950" 
+            />
+          </div>
+
+          <div className="flex justify-end gap-3 pt-2">
+            <Button type="button" variant="outline" onClick={() => setIsSettingsModalOpen(false)}>Cancel</Button>
+            <Button type="submit">Save Changes</Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   )
 }
