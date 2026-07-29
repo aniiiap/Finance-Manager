@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react"
 import { useNavigate, useLocation, useParams } from "react-router-dom"
 import { useAuth } from "../context/AuthContext"
+import { API_BASE_URL } from "../lib/api"
 import { Building2, Lock, Mail, Eye, EyeOff } from "lucide-react"
 
 export default function Login() {
@@ -20,7 +21,7 @@ export default function Login() {
   useEffect(() => {
     if (companySlug) {
       // Fetch public company info
-      fetch(`/api/auth/company/${companySlug}`)
+      fetch(`${API_BASE_URL}/api/auth/company/${companySlug}`)
         .then(res => res.ok ? res.json() : null)
         .then(data => {
           if (data && !data.error) {
