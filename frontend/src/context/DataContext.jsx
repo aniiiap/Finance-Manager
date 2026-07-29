@@ -318,7 +318,8 @@ export const DataProvider = ({ children }) => {
         toast("User added successfully!", "success");
         return true;
       }
-      toast("Failed to add user", "error");
+      const data = await res.json().catch(() => ({}));
+      toast(data.error || "Failed to add user", "error");
       return false;
     } catch (err) {
       console.error(err);

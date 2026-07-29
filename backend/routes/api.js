@@ -274,7 +274,7 @@ router.post('/users', verifyToken, verifyAdmin, requireClient, async (req, res) 
     const salt = await bcrypt.genSalt(12);
     const password_hash = await bcrypt.hash(password, salt);
     
-    const allModules = ["Clients", "Projects", "Transactions", "Ledger", "Profit & Loss", "Stock", "Categories", "Reports", "Sales"];
+    const allModules = ["Clients", "Projects", "Transactions", "Sales", "Purchases", "Ledger", "Profit & Loss", "Stock", "Categories", "Reports", "Letters", "Progress Reports"];
     let finalModules = Array.isArray(access_modules) ? access_modules.filter(m => allModules.includes(m)) : allModules;
     if (role === 'ADMIN') finalModules = allModules;
 
@@ -304,6 +304,9 @@ router.post('/users', verifyToken, verifyAdmin, requireClient, async (req, res) 
   } catch (err) {
     await client.query('ROLLBACK');
     console.error(err);
+    if (err.constraint === 'users_email_key') {
+      return res.status(400).json({ error: 'A user with this email already exists' });
+    }
     res.status(500).json({ error: 'Server error' });
   } finally {
     client.release();
@@ -323,7 +326,7 @@ router.put('/users/:id', verifyToken, verifyAdmin,  verifyAdmin, requireClient, 
       return res.status(400).json({ error: 'Invalid role. Allowed: ADMIN, USER' });
     }
     
-    const allModules = ["Clients", "Projects", "Transactions", "Ledger", "Profit & Loss", "Stock", "Categories", "Reports", "Sales"];
+    const allModules = ["Clients", "Projects", "Transactions", "Sales", "Purchases", "Ledger", "Profit & Loss", "Stock", "Categories", "Reports", "Letters", "Progress Reports"];
     let finalModules = Array.isArray(access_modules) ? access_modules.filter(m => allModules.includes(m)) : allModules;
     if (role === 'ADMIN') finalModules = allModules;
 
