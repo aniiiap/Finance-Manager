@@ -31,8 +31,8 @@ export default function Ledger() {
     return cat ? cat.name : idOrName;
   };
 
-  const actualClients = people.filter(p => projects.some(proj => proj.client_id === p.id));
-  const suppliers = people.filter(p => !projects.some(proj => proj.client_id === p.id));
+  const actualClients = people.filter(p => p.company || projects.some(proj => proj.client_id === p.id));
+  const suppliers = people.filter(p => !p.company && !projects.some(proj => proj.client_id === p.id));
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1)
