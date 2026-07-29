@@ -49,7 +49,7 @@ const configuredOrigins = (process.env.FRONTEND_URL || '')
   .map((s) => s.trim())
   .filter(Boolean);
 
-const defaultDevOrigins = ['http://localhost:5173', 'http://127.0.0.1:5173'];
+const defaultDevOrigins = ['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:5174', 'http://127.0.0.1:5174'];
 
 app.use(cors({
   origin(origin, callback) {
