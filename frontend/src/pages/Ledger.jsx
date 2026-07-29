@@ -13,6 +13,7 @@ export default function Ledger() {
   const { projects, transactions, people, clients, categories } = useData()
   const [selectedProject, setSelectedProject] = useState("all")
   const [selectedParty, setSelectedParty] = useState("all")
+  const [selectedClient, setSelectedClient] = useState("all")
   const [searchQuery, setSearchQuery] = useState('')
   const [filterDate, setFilterDate] = useState('')
 
@@ -46,6 +47,15 @@ export default function Ledger() {
   if (selectedProject !== "all") {
     projectTransactions = projectTransactions.filter(t => (t.project_name || t.project) === selectedProject)
   }
+  if (selectedClient !== "all") {
+    projectTransactions = projectTransactions.filter(t => {
+      const partyName = t.party_name || getPartyName(t.party_id || t.party);
+      if (partyName === selectedClient) return true;
+      const proj = projects.find(p => p.name === (t.project_name || t.project));
+      if (proj && proj.client === selectedClient) return true;
+      return false;
+    })
+  }
   if (selectedParty !== "all") {
     projectTransactions = projectTransactions.filter(t => getPartyName(t.party_id || t.party) === selectedParty)
   }
@@ -55,7 +65,7 @@ export default function Ledger() {
   if (searchQuery.trim() !== '') {
     const q = searchQuery.toLowerCase()
     projectTransactions = projectTransactions.filter(tx => 
-      String(getPartyName(tx.party_id || tx.party) || '').toLowerCase().includes(q) || 
+      String(tx.party_name || getPartyName(tx.party_id || tx.party) || '').toLowerCase().includes(q) || 
       String(getCategoryName(tx.category_id || tx.category) || '').toLowerCase().includes(q) ||
       String(tx.narration || '').toLowerCase().includes(q) ||
       String(tx.description || '').toLowerCase().includes(q) ||
@@ -79,7 +89,7 @@ export default function Ledger() {
   const exportData = ledgerData.map(tx => ({
     "Date": new Date(tx.date).toLocaleDateString(),
     "Project": tx.project_name || tx.project,
-    "Party": getPartyName(tx.party_id || tx.party),
+    "Party": tx.party_name || getPartyName(tx.party_id || tx.party),
     "Narration": tx.narration || tx.description || '',
     "Category": getCategoryName(tx.category_id || tx.category),
     "Method": tx.payment_method,
@@ -104,7 +114,7 @@ export default function Ledger() {
           />
         </div>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end w-full mt-4 md:mt-0">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end w-full mt-4 md:mt-0">
         <div className="relative w-full">
             <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1 block">Search</label>
             <div className="relative">
@@ -136,19 +146,25 @@ export default function Ledger() {
             </select>
           </div>
           <div className="w-full">
+            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1 block">Filter by Client</label>
+            <select 
+              className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900"
+              value={selectedClient} 
+              onChange={(e) => setSelectedClient(e.target.value)}
+            >
+              <option value="all">All Clients</option>
+              {actualClients.map(c => <option key={`c-${c.id}`} value={c.name}>{c.name}</option>)}
+            </select>
+          </div>
+          <div className="w-full">
             <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1 block">Filter by Party</label>
             <select 
               className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900"
               value={selectedParty} 
               onChange={(e) => setSelectedParty(e.target.value)}
             >
-              <option value="all">All Clients & Subcontractors</option>
-              <optgroup label="Clients">
-                {actualClients.map(c => <option key={`c-${c.id}`} value={c.name}>{c.name}</option>)}
-              </optgroup>
-              <optgroup label="Subcontractors & Suppliers">
-                {suppliers.map(p => <option key={`p-${p.id}`} value={p.name}>{p.name}</option>)}
-              </optgroup>
+              <option value="all">All Subcontractors & Suppliers</option>
+              {suppliers.map(p => <option key={`p-${p.id}`} value={p.name}>{p.name}</option>)}
             </select>
           </div>
         </div>
@@ -190,10 +206,10 @@ export default function Ledger() {
                     <TableCell>
                       <div 
                         className="font-medium text-indigo-600 hover:underline cursor-pointer"
-                        onClick={() => setSelectedParty(getPartyName(tx.party_id || tx.party))}
+                        onClick={() => setSelectedParty(tx.party_name || getPartyName(tx.party_id || tx.party))}
                         title="Click to view ledger for this party only"
                       >
-                        {getPartyName(tx.party_id || tx.party)}
+                        {tx.party_name || getPartyName(tx.party_id || tx.party)}
                       </div>
                       {(tx.narration || tx.description) && <div className="text-xs text-slate-500 mt-1 line-clamp-1">{tx.narration || tx.description}</div>}
                     </TableCell>

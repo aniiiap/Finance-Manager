@@ -72,7 +72,7 @@ export default function Transactions() {
 
   const filteredTransactions = transactions.filter(tx => {
     const q = searchQuery.toLowerCase()
-    const partyName = getPartyName(tx.party_id || tx.party);
+    const partyName = tx.party_name || getPartyName(tx.party_id || tx.party);
     const categoryName = getCategoryName(tx.category_id || tx.category);
 
     const matchesSearch = (partyName || '').toString().toLowerCase().includes(q) || 
@@ -145,7 +145,7 @@ export default function Transactions() {
     "Date": new Date(tx.date).toLocaleDateString(),
     "Project": tx.project_name || tx.project,
     "Type": tx.type,
-    "Party": getPartyName(tx.party_id || tx.party),
+    "Party": tx.party_name || getPartyName(tx.party_id || tx.party),
     "Category": getCategoryName(tx.category_id || tx.category),
     "Method": tx.paymentMethod || tx.payment_method || '',
     "Amount": tx.amount,
@@ -276,10 +276,10 @@ export default function Transactions() {
                     <TableCell>
                       <div 
                         className="font-medium text-indigo-600 hover:underline cursor-pointer"
-                        onClick={() => setSelectedParty(getPartyName(tx.party_id || tx.party))}
+                        onClick={() => setSelectedParty(tx.party_name || getPartyName(tx.party_id || tx.party))}
                         title="Click to filter by this party"
                       >
-                        {getPartyName(tx.party_id || tx.party)}
+                        {tx.party_name || getPartyName(tx.party_id || tx.party)}
                       </div>
                       {tx.description && <div className="text-xs text-slate-500 mt-1 line-clamp-1">{tx.description}</div>}
                     </TableCell>

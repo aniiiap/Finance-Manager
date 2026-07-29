@@ -237,7 +237,7 @@ export default function ProjectDetail() {
                   {paginatedLedger.map(tx => (
                     <TableRow key={tx.id}>
                       <TableCell>{new Date(tx.date).toLocaleDateString()}</TableCell>
-                      <TableCell className="font-medium">{getPartyName(tx.party_id || tx.party)}</TableCell>
+                      <TableCell className="font-medium">{tx.party_name || getPartyName(tx.party_id || tx.party)}</TableCell>
                       <TableCell>{getCategoryName(tx.category_id || tx.category)}</TableCell>
                       <TableCell className="text-slate-500 text-sm">{tx.paymentMethod || 'Net Banking'}</TableCell>
                       <TableCell className="text-right text-green-600">{tx.type === 'Income' ? formatFullCurrency(tx.amount) : '-'}</TableCell>
@@ -294,7 +294,7 @@ export default function ProjectDetail() {
                       </TableCell>
                       <TableCell>{getCategoryName(tx.category_id || tx.category)}</TableCell>
                       <TableCell>
-                        <div className="font-medium text-slate-900">{getPartyName(tx.party_id || tx.party)}</div>
+                        <div className="font-medium text-slate-900">{tx.party_name || getPartyName(tx.party_id || tx.party)}</div>
                         {(tx.narration || tx.description) && <div className="text-xs text-slate-500 mt-1 line-clamp-1">{tx.narration || tx.description}</div>}
                       </TableCell>
                       <TableCell className={`text-right font-semibold ${tx.type === 'Income' ? 'text-green-600' : 'text-slate-900'}`}>
@@ -331,7 +331,7 @@ export default function ProjectDetail() {
                   {incomeTxs.map(tx => (
                     <TableRow key={tx.id}>
                       <TableCell>{new Date(tx.date).toLocaleDateString()}</TableCell>
-                      <TableCell className="font-medium">{getPartyName(tx.party_id || tx.party)}</TableCell>
+                      <TableCell className="font-medium">{tx.party_name || getPartyName(tx.party_id || tx.party)}</TableCell>
                       <TableCell>{getCategoryName(tx.category_id || tx.category)}</TableCell>
                       <TableCell className="text-slate-500 text-sm">{tx.paymentMethod || 'Net Banking'}</TableCell>
                       <TableCell className="text-right text-green-600 font-semibold">+{formatFullCurrency(tx.amount)}</TableCell>
@@ -366,7 +366,7 @@ export default function ProjectDetail() {
                   {expenseTxs.map(tx => (
                     <TableRow key={tx.id}>
                       <TableCell>{new Date(tx.date).toLocaleDateString()}</TableCell>
-                      <TableCell className="font-medium">{getPartyName(tx.party_id || tx.party)}</TableCell>
+                      <TableCell className="font-medium">{tx.party_name || getPartyName(tx.party_id || tx.party)}</TableCell>
                       <TableCell>{getCategoryName(tx.category_id || tx.category)}</TableCell>
                       <TableCell className="text-slate-500 text-sm">{tx.paymentMethod || 'Net Banking'}</TableCell>
                       <TableCell className="text-right text-slate-900 font-semibold">-{formatFullCurrency(tx.amount)}</TableCell>

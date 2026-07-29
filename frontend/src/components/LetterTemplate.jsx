@@ -9,7 +9,7 @@ export default function LetterTemplate({ letter }) {
 
   return (
     <div id="letter-pdf-template" className="hidden">
-      <div className="bg-white text-black font-sans" style={{ width: '210mm', minHeight: '297mm', padding: '15mm 15mm' }}>
+      <div className="bg-white text-black font-sans" style={{ width: '210mm', minHeight: 'auto', padding: '15mm 15mm' }}>
         
         {/* Header Section */}
         <div className="flex justify-between text-xs font-bold text-blue-900 mb-2">
@@ -59,19 +59,6 @@ export default function LetterTemplate({ letter }) {
 
         {/* Letter Content */}
         <div className="px-4 text-base leading-relaxed whitespace-pre-wrap quill-content" dangerouslySetInnerHTML={{ __html: letter.content }} style={{ minHeight: '150mm' }}>
-        </div>
-
-        {/* Footer / Signature */}
-        <div className="flex justify-end mt-16 px-4">
-          <div className="text-center font-bold text-blue-900 flex flex-col items-center">
-            <p>For {companyInfo?.company_name || 'CPMR Projects Private Limited'}</p>
-            <div className="h-16 w-32 border-b-2 border-transparent relative flex items-center justify-center">
-              {companyInfo?.signature_url && (
-                <img src={companyInfo.signature_url} alt="Signature" className="max-h-full max-w-full object-contain" crossOrigin="anonymous" />
-              )}
-            </div>
-            <p className="text-sm">Authorised Signatory</p>
-          </div>
         </div>
 
       </div>

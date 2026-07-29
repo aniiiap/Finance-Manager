@@ -81,18 +81,20 @@ router.get('/transactions', verifyToken, requireClient, requireModule('Transacti
     let result;
     if (req.user.role === 'USER') {
       result = await pool.query(`
-        SELECT t.*, t.narration as description, t.payment_method as "paymentMethod", t.person_id as party_id, p.name as project_name 
+        SELECT t.*, t.narration as description, t.payment_method as "paymentMethod", t.person_id as party_id, p.name as project_name, pp.name as party_name 
         FROM transactions t 
         LEFT JOIN projects p ON t.project_id = p.id
+        LEFT JOIN people pp ON t.person_id = pp.id
         JOIN user_project_access upa ON p.id = upa.project_id
         WHERE t.company_id = $1 AND upa.user_id = $2
         ORDER BY t.date DESC
       `, [req.user.company_id, req.user.id]);
     } else {
       result = await pool.query(`
-        SELECT t.*, t.narration as description, t.payment_method as "paymentMethod", t.person_id as party_id, p.name as project_name 
+        SELECT t.*, t.narration as description, t.payment_method as "paymentMethod", t.person_id as party_id, p.name as project_name, pp.name as party_name 
         FROM transactions t 
         LEFT JOIN projects p ON t.project_id = p.id
+        LEFT JOIN people pp ON t.person_id = pp.id
         WHERE t.company_id = $1 AND t.is_deleted = false
         ORDER BY t.date DESC
       `, [req.user.company_id]);

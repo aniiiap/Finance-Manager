@@ -14,6 +14,9 @@ export default function ProgressReport() {
   const [currentFolder, setCurrentFolder] = useState(null);
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   
   // Upload Modal State
   const [showUploadModal, setShowUploadModal] = useState(false);
@@ -141,8 +144,18 @@ export default function ProgressReport() {
 
   const displayedFiles = files.filter(f => {
     const ext = f.file_name.split('.').pop().toLowerCase();
-    if (activeTab === 'PDF') return ext === 'pdf';
-    return ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext);
+    const matchesTab = activeTab === 'PDF' ? ext === 'pdf' : ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext);
+    const matchesSearch = f.file_name.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    let matchesDate = true;
+    if (startDate) {
+      matchesDate = matchesDate && new Date(f.upload_date) >= new Date(startDate);
+    }
+    if (endDate) {
+      matchesDate = matchesDate && new Date(f.upload_date) <= new Date(endDate + 'T23:59:59');
+    }
+    
+    return matchesTab && matchesSearch && matchesDate;
   });
 
   const fileExportData = displayedFiles.map((f, idx) => ({
@@ -227,6 +240,33 @@ export default function ProgressReport() {
             </div>
           </CardHeader>
           <CardContent className="p-6">
+            <div className="flex flex-col sm:flex-row gap-4 mb-6">
+              <input 
+                type="text" 
+                placeholder="Search files..." 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="flex-1 rounded-md border border-slate-300 px-3 py-2 text-sm"
+              />
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium">From:</span>
+                <input 
+                  type="date" 
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium">To:</span>
+                <input 
+                  type="date" 
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+                />
+              </div>
+            </div>
             {loading ? (
               <div className="flex justify-center p-12 text-muted-foreground">
                 <Loader2 className="w-8 h-8 animate-spin" />

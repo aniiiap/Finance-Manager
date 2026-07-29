@@ -85,7 +85,7 @@ export default function ProfitAndLoss() {
                       {txs.map(tx => (
                         <TableRow key={tx.id} className="text-sm">
                           <TableCell className="text-slate-500">{new Date(tx.date).toLocaleDateString()}</TableCell>
-                          <TableCell>{getPartyName(tx.party_id || tx.party)}</TableCell>
+                          <TableCell>{tx.party_name || getPartyName(tx.party_id || tx.party)}</TableCell>
                           <TableCell className="text-slate-500">{tx.project_name || tx.project}</TableCell>
                           <TableCell className="text-right font-medium">
                             {formatFullCurrency(tx.amount)}
@@ -112,7 +112,7 @@ export default function ProfitAndLoss() {
     "Type": tx.type,
     "Category": getCategoryName(tx.category_id || tx.category),
     "Project": tx.project_name || tx.project,
-    "Client/Party": getPartyName(tx.party_id || tx.party),
+    "Client/Party": tx.party_name || getPartyName(tx.party_id || tx.party),
     "Amount": tx.amount,
     "Narration": tx.description || tx.narration || ''
   }))
