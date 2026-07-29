@@ -66,7 +66,27 @@ export const DataProvider = ({ children }) => {
         });
         setProjects(parsedProjects);
       }
-      if (txRes.ok) setTransactions(await txRes.json());
+      if (txRes.ok) {
+        const rawTxs = await txRes.json();
+        const parsedTxs = rawTxs.map(tx => {
+          let partyStr = tx.party_name || tx.party;
+          if (partyStr) {
+            try {
+              let p = JSON.parse(partyStr);
+              if (typeof p === 'string') p = JSON.parse(p);
+              if (p && typeof p === 'object' && p.name) {
+                partyStr = p.name;
+              }
+            } catch(e) {
+              const match = partyStr.match(/"name"\s*:\s*"([^"]+)"/);
+              if (match) partyStr = match[1];
+            }
+            return { ...tx, party_name: partyStr, party: partyStr };
+          }
+          return tx;
+        });
+        setTransactions(parsedTxs);
+      }
       if (catRes.ok) setCategories(await catRes.json());
       if (clientsRes.ok) {
         const rawClients = await clientsRes.json();
