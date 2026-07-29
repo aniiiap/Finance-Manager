@@ -1,5 +1,5 @@
-import { useState } from "react"
-import { useNavigate, useLocation } from "react-router-dom"
+import { useState, useEffect } from "react"
+import { useNavigate, useLocation, useParams } from "react-router-dom"
 import { useAuth } from "../context/AuthContext"
 import { Building2, Lock, Mail, Eye, EyeOff } from "lucide-react"
 
@@ -13,6 +13,23 @@ export default function Login() {
   const { login } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
+  const { companySlug } = useParams()
+  
+  const [companyBranding, setCompanyBranding] = useState(null)
+  
+  useEffect(() => {
+    if (companySlug) {
+      // Fetch public company info
+      fetch(`/api/auth/company/${companySlug}`)
+        .then(res => res.ok ? res.json() : null)
+        .then(data => {
+          if (data && !data.error) {
+            setCompanyBranding(data)
+          }
+        })
+        .catch(console.error)
+    }
+  }, [companySlug])
   
   // Show success message if redirected from SetPassword
   const successMessage = location.state?.message
@@ -42,10 +59,14 @@ export default function Login() {
     <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="flex justify-center text-slate-900">
-          <img src="/logo.png" alt="FinManager Logo" className="w-24 h-24 object-contain" />
+          {companyBranding?.logo_url ? (
+            <img src={companyBranding.logo_url} alt={`${companyBranding.name} Logo`} className="w-auto h-24 max-w-full object-contain" />
+          ) : (
+            <img src="/logo.png" alt="FinManager Logo" className="w-24 h-24 object-contain" />
+          )}
         </div>
         <h2 className="mt-6 text-center text-3xl font-extrabold text-slate-900">
-          Sign in to your account
+          {companyBranding ? `Sign in to ${companyBranding.name}` : 'Sign in to your account'}
         </h2>
         <p className="mt-2 text-center text-sm text-slate-600">
           Enterprise Financial Management System

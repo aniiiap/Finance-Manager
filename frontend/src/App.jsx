@@ -61,6 +61,7 @@ function App() {
             <Router>
               <Routes>
                 <Route path="/login" element={<Login />} />
+                <Route path="/login/:companySlug" element={<Login />} />
                 <Route path="/set-password" element={<SetPassword />} />
                 <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
                   {/* Client Routes - Blocked for Super Admin */}

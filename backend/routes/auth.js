@@ -6,6 +6,24 @@ const pool = require('../database/db');
 const { verifyToken, verifyAdmin, generateTempPassword } = require('../middleware/auth');
 
 // 1. Login Route
+router.get('/company/:slug', async (req, res) => {
+  try {
+    const { slug } = req.params;
+    const result = await pool.query(
+      `SELECT id, name, logo_url FROM companies 
+       WHERE LOWER(REPLACE(name, ' ', '')) LIKE LOWER(REPLACE($1, '-', '')) || '%' 
+       LIMIT 1`,
+      [slug]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Company not found' });
+    }
+    res.json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
