@@ -7,9 +7,18 @@ import autoTable from 'jspdf-autotable';
  * @param {Array<Object>} data - Array of objects representing the rows
  * @param {string} filename - Name of the output file (without extension)
  */
-export const exportToExcel = (data, filename) => {
+export const exportToExcel = (data, filename, companyName = '') => {
   if (!data || data.length === 0) return;
-  const worksheet = XLSX.utils.json_to_sheet(data);
+  
+  const worksheet = XLSX.utils.json_to_sheet([]);
+  
+  if (companyName) {
+    XLSX.utils.sheet_add_aoa(worksheet, [[companyName]], { origin: "A1" });
+    XLSX.utils.sheet_add_json(worksheet, data, { origin: "A3", skipHeader: false });
+  } else {
+    XLSX.utils.sheet_add_json(worksheet, data, { origin: "A1", skipHeader: false });
+  }
+  
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, 'Data');
   XLSX.writeFile(workbook, `${filename}.xlsx`);
@@ -22,14 +31,22 @@ export const exportToExcel = (data, filename) => {
  * @param {string} filename - Name of the output file (without extension)
  * @param {string} title - Optional title to print at the top of the PDF
  */
-export const exportToPdf = (data, columns, filename, title = '') => {
+export const exportToPdf = (data, columns, filename, title = '', companyName = '') => {
   if (!data || data.length === 0) return;
   
   const doc = new jsPDF();
   
+  let startY = 14;
+  if (companyName) {
+    doc.setFontSize(16);
+    doc.text(companyName, 14, startY);
+    startY += 8;
+  }
+  
   if (title) {
-    doc.setFontSize(14);
-    doc.text(title, 14, 15);
+    doc.setFontSize(12);
+    doc.text(title, 14, startY);
+    startY += 8;
   }
 
   // Format data for autotable
@@ -42,7 +59,7 @@ export const exportToPdf = (data, columns, filename, title = '') => {
   autoTable(doc, {
     head: head,
     body: body,
-    startY: title ? 20 : 14,
+    startY: startY + 2,
     theme: 'grid',
     headStyles: { fillColor: [41, 128, 185] },
     styles: { fontSize: 8 }

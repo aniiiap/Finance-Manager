@@ -1,14 +1,18 @@
 import { FileSpreadsheet, FileText } from "lucide-react";
 import { Button } from "./button";
 import { exportToExcel, exportToPdf } from "../../utils/exportUtils";
+import { useData } from "../../context/DataContext";
 
 export function ExportButtons({ data, columns, filename, title = "", hidePdf = false, hideExcel = false }) {
+  const { companyInfo } = useData();
+  const companyName = companyInfo?.company_name || '';
+
   const handleExcel = () => {
-    exportToExcel(data, filename);
+    exportToExcel(data, filename, companyName);
   };
 
   const handlePdf = () => {
-    exportToPdf(data, columns, filename, title || filename);
+    exportToPdf(data, columns, filename, title || filename, companyName);
   };
 
   return (
