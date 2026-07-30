@@ -72,14 +72,17 @@ export default function Clients() {
     setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
   }
 
-  const exportData = filteredClients.map(client => ({
-    "Name": client.name,
-    "Company": client.company || '',
-    "Email": client.email || '',
-    "Phone": client.phone || '',
-    "Address": client.address || '',
-    "Projects": projects.filter(p => p.client_id === client.id).length
-  }))
+  const exportData = filteredClients.map(client => {
+    const clientProjects = projects.filter(p => p.client_id === client.id);
+    return {
+      "Name": client.name,
+      "Company": client.company || '',
+      "Email": client.email || '',
+      "Phone": client.phone || '',
+      "Address": client.address || '',
+      "Projects": clientProjects.length > 0 ? clientProjects.map(p => p.name).join(", ") : "-"
+    };
+  });
 
   return (
     <div className="space-y-6">
