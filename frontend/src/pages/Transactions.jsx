@@ -342,6 +342,7 @@ export default function Transactions() {
               <label className="text-sm font-medium">Type</label>
               <select name="type" className="flex h-10 w-full rounded-md border border-slate-200 px-3 text-sm" value={txType} onChange={(e) => setTxType(e.target.value)}>
                 <option value="Expense">Expense</option>
+                <option value="Income">Income</option>
               </select>
             </div>
           </div>

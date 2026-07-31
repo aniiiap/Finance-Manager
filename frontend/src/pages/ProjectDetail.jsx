@@ -436,10 +436,10 @@ export default function ProjectDetail() {
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Type</label>
-              <select className="flex h-10 w-full rounded-md border border-slate-200 px-3 text-sm bg-slate-50 cursor-not-allowed" value={txType} disabled>
-                <option value={txType}>{txType}</option>
+              <select name="type" className="flex h-10 w-full rounded-md border border-slate-200 px-3 text-sm" value={txType} onChange={(e) => setTxType(e.target.value)}>
+                <option value="Expense">Expense</option>
+                <option value="Income">Income</option>
               </select>
-              <input type="hidden" name="type" value={txType} />
             </div>
           </div>
           <div className="space-y-2">
