@@ -191,10 +191,10 @@ router.post('/purchases', verifyToken, requireClient, requireModule('Purchases')
         for (const item of items) {
             await client.query(
                 `INSERT INTO purchase_items (
-                    purchase_id, description, hsn_sac, quantity, rate, per, amount, gst_rate, cgst_amount, sgst_amount, total_amount
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+                    purchase_id, description, narration, hsn_sac, quantity, rate, per, amount, gst_rate, cgst_amount, sgst_amount, total_amount
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
                 [
-                    invId, item.description, item.hsn_sac, item.quantity || null, item.rate || null, item.per, item.amount, 
+                    invId, item.description, item.narration || null, item.hsn_sac, item.quantity || null, item.rate || null, item.per, item.amount, 
                     item.gst_rate, item.cgst_amount, item.sgst_amount, item.total_amount
                 ]
             );

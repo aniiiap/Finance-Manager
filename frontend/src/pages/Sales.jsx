@@ -739,7 +739,7 @@ export default function Sales() {
                       <TableCell>
                         <div className="flex flex-col gap-2">
                           <input type="text" value={item.description} onChange={(e) => handleItemChange(idx, 'description', e.target.value)} required className="w-full h-8 px-2 border rounded text-sm" placeholder="Item Name"/>
-                          <input type="text" value={item.narration || ''} onChange={(e) => handleItemChange(idx, 'narration', e.target.value)} className="w-full h-8 px-2 border rounded text-sm text-slate-500" placeholder="Narration / Item Details (Optional)"/>
+                          <textarea value={item.narration || ''} onChange={(e) => handleItemChange(idx, 'narration', e.target.value)} className="w-full h-8 min-h-[32px] px-2 py-1.5 border rounded text-sm text-slate-500 focus:min-h-[80px] transition-all resize-none" placeholder="+ Add Narration / Details" />
                         </div>
                       </TableCell>
                       <TableCell><input type="text" value={item.hsn_sac} onChange={(e) => handleItemChange(idx, 'hsn_sac', e.target.value)} className="w-full h-8 px-2 border rounded text-sm"/></TableCell>
