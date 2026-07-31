@@ -192,8 +192,8 @@ router.post('/invoices', verifyToken, requireClient, requireModule('Sales'), asy
                     invoice_id, description, narration, hsn_sac, quantity, rate, per, amount, gst_rate, cgst_amount, sgst_amount, total_amount
                 ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
                 [
-                    invId, item.description, item.narration || null, item.hsn_sac, item.quantity || null, item.rate || null, item.per, item.amount, 
-                    item.gst_rate, item.cgst_amount, item.sgst_amount, item.total_amount
+                    invId, item.description || '', item.narration || null, item.hsn_sac || null, item.quantity || null, item.rate || null, item.per || 'PCS', item.amount || 0, 
+                    item.gst_rate || 0, item.cgst_amount || 0, item.sgst_amount || 0, item.total_amount || 0
                 ]
             );
         }
@@ -203,7 +203,7 @@ router.post('/invoices', verifyToken, requireClient, requireModule('Sales'), asy
     } catch (err) {
         await client.query('ROLLBACK');
         console.error(err);
-        res.status(500).json({ error: 'Server error' });
+        res.status(500).json({ error: err.message, stack: err.stack });
     } finally {
         client.release();
     }
