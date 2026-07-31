@@ -213,6 +213,9 @@ export default function PurchaseTemplate({ purchase, innerRef, className = "" })
                 </td>
                 <td className="border-r-[1.5px] border-black p-1 border-b-transparent border-t-transparent">
                   <span className="font-bold">{item.description}</span>
+                  {item.narration && (
+                    <div className="italic text-[10px] mt-0.5 text-slate-700 whitespace-pre-line">{item.narration}</div>
+                  )}
                 </td>
                 <td className="border-r-[1.5px] border-black text-right p-1 font-bold border-b-transparent border-t-transparent">
                   {item.quantity ? `${parseFloat(item.quantity).toFixed(2)}` : ""}

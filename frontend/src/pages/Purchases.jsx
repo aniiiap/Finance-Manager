@@ -79,7 +79,7 @@ export default function Purchases() {
   })
   
   const [items, setItems] = useState([
-    { description: "", hsn_sac: "", quantity: "", rate: "", per: "PCS", amount: "0", gst_rate: "18" }
+    { description: "", narration: "", hsn_sac: "", quantity: "", rate: "", per: "PCS", amount: "0", gst_rate: "18" }
   ])
 
   useEffect(() => {
@@ -180,7 +180,7 @@ export default function Purchases() {
   }
 
   const addItemRow = () => {
-    setItems([...items, { description: "", hsn_sac: "", quantity: "", rate: "", per: "PCS", amount: "0", gst_rate: "18" }])
+    setItems([...items, { description: "", narration: "", hsn_sac: "", quantity: "", rate: "", per: "PCS", amount: "0", gst_rate: "18" }])
   }
   
   const removeItemRow = (index) => {
@@ -803,7 +803,12 @@ export default function Purchases() {
                   {items.map((item, idx) => (
                     <TableRow key={idx}>
                       <TableCell>{idx + 1}</TableCell>
-                      <TableCell><input type="text" value={item.description} onChange={(e) => handleItemChange(idx, 'description', e.target.value)} required className="w-full h-8 px-2 border rounded text-sm" placeholder="Item Name"/></TableCell>
+                      <TableCell>
+                        <div className="flex flex-col gap-2">
+                          <input type="text" value={item.description} onChange={(e) => handleItemChange(idx, 'description', e.target.value)} required className="w-full h-8 px-2 border rounded text-sm" placeholder="Item Name"/>
+                          <input type="text" value={item.narration || ''} onChange={(e) => handleItemChange(idx, 'narration', e.target.value)} className="w-full h-8 px-2 border rounded text-sm text-slate-500" placeholder="Narration / Item Details (Optional)"/>
+                        </div>
+                      </TableCell>
                       <TableCell><input type="text" value={item.hsn_sac} onChange={(e) => handleItemChange(idx, 'hsn_sac', e.target.value)} className="w-full h-8 px-2 border rounded text-sm"/></TableCell>
                       <TableCell><input type="number" step="0.01" value={item.quantity} onChange={(e) => handleItemChange(idx, 'quantity', e.target.value)} className="w-full h-8 px-2 border rounded text-sm" placeholder="Qty"/></TableCell>
                       <TableCell><input type="number" step="0.01" value={item.rate} onChange={(e) => handleItemChange(idx, 'rate', e.target.value)} className="w-full h-8 px-2 border rounded text-sm" placeholder="Rate"/></TableCell>
