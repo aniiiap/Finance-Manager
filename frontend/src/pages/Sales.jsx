@@ -739,7 +739,11 @@ export default function Sales() {
                       <TableCell>
                         <div className="flex flex-col gap-2">
                           <input type="text" value={item.description} onChange={(e) => handleItemChange(idx, 'description', e.target.value)} required className="w-full h-8 px-2 border rounded text-sm" placeholder="Item Name"/>
-                          <textarea value={item.narration || ''} onChange={(e) => handleItemChange(idx, 'narration', e.target.value)} className="w-full h-8 min-h-[32px] px-2 py-1.5 border rounded text-sm text-slate-500 focus:min-h-[80px] transition-all resize-none" placeholder="+ Add Narration / Details" />
+                          {item.showNarration || item.narration ? (
+                            <textarea value={item.narration || ''} onChange={(e) => handleItemChange(idx, 'narration', e.target.value)} autoFocus={!item.narration && item.showNarration} className="w-full h-8 min-h-[32px] px-2 py-1.5 border rounded text-sm text-slate-500 focus:min-h-[80px] transition-all resize-none" placeholder="Narration / Details" />
+                          ) : (
+                            <button type="button" onClick={() => handleItemChange(idx, 'showNarration', true)} className="text-xs text-blue-500 text-left hover:underline cursor-pointer bg-transparent border-none p-0">+ Add Narration / Details</button>
+                          )}
                         </div>
                       </TableCell>
                       <TableCell><input type="text" value={item.hsn_sac} onChange={(e) => handleItemChange(idx, 'hsn_sac', e.target.value)} className="w-full h-8 px-2 border rounded text-sm"/></TableCell>
