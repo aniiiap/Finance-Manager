@@ -260,7 +260,7 @@ export default function InvoiceTemplate({ invoice, innerRef, className = "" }) {
             </tr>
           ))}
 
-          <tr className="h-24">
+          <tr className="h-4">
             <td className="border-r-[1.5px] border-black border-b-transparent border-t-transparent" />
             <td className="border-r-[1.5px] border-black border-b-transparent border-t-transparent" />
             <td className="border-r-[1.5px] border-black border-b-transparent border-t-transparent" />
