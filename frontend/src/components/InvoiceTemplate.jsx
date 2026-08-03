@@ -367,34 +367,34 @@ export default function InvoiceTemplate({ invoice, innerRef, className = "" }) {
       </div>
 
       {Object.keys(taxGroups).length > 0 && (
-        <table className="w-full border-collapse border-b-[1.5px] border-black text-center table-fixed">
+        <table className="w-full border-collapse border-b-[1.5px] border-black text-center">
           <thead>
             <tr>
-              <th className="border-r border-b-[1.5px] border-black px-1.5 py-1.5 font-semibold w-[25%]" rowSpan={2}>
+              <th className="border-r-[1.5px] border-b-[1.5px] border-black px-1.5 py-1.5 font-semibold" rowSpan={2}>
                 HSN/SAC
               </th>
-              <th className="border-r border-b-[1.5px] border-black px-1.5 py-1.5 font-semibold w-[15%]" rowSpan={2}>
+              <th className="border-r-[1.5px] border-b-[1.5px] border-black px-1.5 py-1.5 font-semibold" rowSpan={2}>
                 Taxable
                 <br />
                 Value
               </th>
-              <th className="border-r border-b-[1.5px] border-black px-1.5 py-1.5 font-semibold w-[25%]" colSpan={2}>
+              <th className="border-r-[1.5px] border-b-[1.5px] border-black px-1.5 py-1.5 font-semibold" colSpan={2}>
                 Central Tax
               </th>
-              <th className="border-r border-b-[1.5px] border-black px-1.5 py-1.5 font-semibold w-[25%]" colSpan={2}>
+              <th className="border-r-[1.5px] border-b-[1.5px] border-black px-1.5 py-1.5 font-semibold" colSpan={2}>
                 State Tax
               </th>
-              <th className="border-b-[1.5px] border-black px-1.5 py-1.5 font-semibold w-[10%]" rowSpan={2}>
+              <th className="border-b-[1.5px] border-black px-1.5 py-1.5 font-semibold" rowSpan={2}>
                 Total
                 <br />
                 Tax Amount
               </th>
             </tr>
             <tr>
-              <th className="border-r border-b-[1.5px] border-black px-1.5 py-1.5 font-semibold">Rate</th>
-              <th className="border-r border-b-[1.5px] border-black px-1.5 py-1.5 font-semibold">Amount</th>
-              <th className="border-r border-b-[1.5px] border-black px-1.5 py-1.5 font-semibold">Rate</th>
-              <th className="border-r border-b-[1.5px] border-black px-1.5 py-1.5 font-semibold">Amount</th>
+              <th className="border-r-[1.5px] border-b-[1.5px] border-black px-1.5 py-1.5 font-semibold">Rate</th>
+              <th className="border-r-[1.5px] border-b-[1.5px] border-black px-1.5 py-1.5 font-semibold">Amount</th>
+              <th className="border-r-[1.5px] border-b-[1.5px] border-black px-1.5 py-1.5 font-semibold">Rate</th>
+              <th className="border-r-[1.5px] border-b-[1.5px] border-black px-1.5 py-1.5 font-semibold">Amount</th>
             </tr>
           </thead>
           <tbody>
@@ -412,9 +412,9 @@ export default function InvoiceTemplate({ invoice, innerRef, className = "" }) {
             <tr className="font-bold">
               <td className="border-r-[1.5px] border-black px-1.5 py-1.5 text-right">Total</td>
               <td className="border-r-[1.5px] border-black px-1.5 py-1.5 text-right">{fmt(hsnTotalTaxable)}</td>
-              <td className="border-r-[1.5px] border-black px-1.5 py-1.5" />
+              <td className="border-r-[1.5px] border-black px-1.5 py-1.5">&nbsp;</td>
               <td className="border-r-[1.5px] border-black px-1.5 py-1.5 text-right">{hsnTotalCgst > 0 ? fmt(hsnTotalCgst) : ""}</td>
-              <td className="border-r-[1.5px] border-black px-1.5 py-1.5" />
+              <td className="border-r-[1.5px] border-black px-1.5 py-1.5">&nbsp;</td>
               <td className="border-r-[1.5px] border-black px-1.5 py-1.5 text-right">{hsnTotalSgst > 0 ? fmt(hsnTotalSgst) : ""}</td>
               <td className="px-1.5 py-1.5 text-right">{hsnTotalTax > 0 ? fmt(hsnTotalTax) : ""}</td>
             </tr>
