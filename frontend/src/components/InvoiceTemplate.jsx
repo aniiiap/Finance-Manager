@@ -89,7 +89,7 @@ export default function InvoiceTemplate({ invoice, innerRef, className = "" }) {
   items.forEach((item) => {
     const hsn = item.hsn_sac || "";
     const gst = parseFloat(item.gst_rate || 0);
-    if (gst > 0) {
+    if (hsn) {
       const key = `${hsn}-${gst}`;
       if (!taxGroups[key]) {
         taxGroups[key] = { hsn, gstRate: gst, taxable: 0, cgstAmt: 0, sgstAmt: 0, totalTax: 0 };
@@ -100,6 +100,11 @@ export default function InvoiceTemplate({ invoice, innerRef, className = "" }) {
       taxGroups[key].totalTax += parseFloat(item.cgst_amount || 0) + parseFloat(item.sgst_amount || 0);
     }
   });
+
+  const hsnTotalTaxable = Object.values(taxGroups).reduce((sum, tg) => sum + tg.taxable, 0);
+  const hsnTotalCgst = Object.values(taxGroups).reduce((sum, tg) => sum + tg.cgstAmt, 0);
+  const hsnTotalSgst = Object.values(taxGroups).reduce((sum, tg) => sum + tg.sgstAmt, 0);
+  const hsnTotalTax = Object.values(taxGroups).reduce((sum, tg) => sum + tg.totalTax, 0);
 
   const totalQty = items.reduce((sum, item) => sum + (parseFloat(item.quantity) || 0), 0);
   const primaryUnit = items.find((i) => i.quantity)?.per || "PCS";
@@ -112,7 +117,8 @@ export default function InvoiceTemplate({ invoice, innerRef, className = "" }) {
   return (
     <div
       ref={innerRef}
-      style={{ fontFamily: "Arial, Helvetica, sans-serif", WebkitTextStroke: "0.1px black" }} className={`invoice-container border-[1.5px] border-black bg-white text-black text-[12px] leading-relaxed font-sans pb-2 ${className}`}
+      style={{ minHeight: "1056px", width: "760px", fontFamily: "Arial, Helvetica, sans-serif", WebkitTextStroke: "0.1px black" }}
+      className={`invoice-container border-[1.5px] border-black bg-white text-black text-[12px] leading-relaxed font-sans flex flex-col ${className}`}
     >
       <div className="text-center font-bold text-sm border-b-[1.5px] border-black py-1">Tax Invoice</div>
 
@@ -120,14 +126,19 @@ export default function InvoiceTemplate({ invoice, innerRef, className = "" }) {
       <div className="grid grid-cols-2 border-b-[1.5px] border-black">
         <div className="border-r-[1.5px] border-black flex flex-col">
           {/* Seller — company legal name only */}
-          <div className="p-2 border-b-[1.5px] border-black">
-            <div className="font-bold text-sm">{companyName}</div>
-            {companyAddress && (
-              <div className="whitespace-pre-line">{companyAddress}</div>
+          <div className="p-2 border-b-[1.5px] border-black flex gap-3">
+            {companyInfo?.logo_url && (
+              <img src={companyInfo.logo_url} alt="Logo" className="w-16 h-16 object-contain" crossOrigin="anonymous" />
             )}
-            {inv.company_gstin && <div>GSTIN/UIN: {inv.company_gstin}</div>}
             <div>
-              State Name : {inv.company_state_name || ""}, Code : {inv.company_state_code || ""}
+              <div className="font-bold text-sm">{companyName}</div>
+              {companyAddress && (
+                <div className="whitespace-pre-line">{companyAddress}</div>
+              )}
+              {inv.company_gstin && <div>GSTIN/UIN: {inv.company_gstin}</div>}
+              <div>
+                State Name : {inv.company_state_name || ""}, Code : {inv.company_state_code || ""}
+              </div>
             </div>
           </div>
 
@@ -202,8 +213,9 @@ export default function InvoiceTemplate({ invoice, innerRef, className = "" }) {
       </div>
 
       {/* Items */}
-      <table className="w-full border-collapse border-b-[1.5px] border-black table-fixed">
-        <thead>
+      <div className="flex-1 flex flex-col">
+        <table className="w-full border-collapse border-b-[1.5px] border-black table-fixed h-full">
+          <thead>
           <tr className="border-b-[1.5px] border-black text-center">
             <th className="border-r-[1.5px] border-black w-8 px-1.5 py-1.5 font-semibold">
               SI
@@ -221,8 +233,8 @@ export default function InvoiceTemplate({ invoice, innerRef, className = "" }) {
               <br />
               Rate
             </th>
-            <th className="border-r-[1.5px] border-black w-20 px-1.5 py-1.5 font-semibold">Quantity</th>
             <th className="border-r-[1.5px] border-black w-20 px-1.5 py-1.5 font-semibold">Rate</th>
+            <th className="border-r-[1.5px] border-black w-20 px-1.5 py-1.5 font-semibold">Quantity</th>
             <th className="border-r-[1.5px] border-black w-10 px-1.5 py-1.5 font-semibold">per</th>
             <th className="w-24 px-1.5 py-1.5 font-semibold">Amount</th>
           </tr>
@@ -245,11 +257,11 @@ export default function InvoiceTemplate({ invoice, innerRef, className = "" }) {
               <td className="border-r-[1.5px] border-black text-center px-1.5 py-1.5 border-b-transparent border-t-transparent">
                 {item.gst_rate ? `${parseFloat(item.gst_rate)} %` : ""}
               </td>
-              <td className="border-r-[1.5px] border-black text-right px-1.5 py-1.5 font-bold border-b-transparent border-t-transparent">
-                {item.quantity ? `${parseFloat(item.quantity).toFixed(2)}` : ""}
-              </td>
               <td className="border-r-[1.5px] border-black text-right px-1.5 py-1.5 border-b-transparent border-t-transparent">
                 {item.rate ? fmt(item.rate) : ""}
+              </td>
+              <td className="border-r-[1.5px] border-black text-right px-1.5 py-1.5 font-bold border-b-transparent border-t-transparent">
+                {item.quantity ? `${parseFloat(item.quantity).toFixed(2)}` : ""}
               </td>
               <td className="border-r-[1.5px] border-black text-center px-1.5 py-1.5 border-b-transparent border-t-transparent">
                 {item.quantity ? item.per || "" : ""}
@@ -260,7 +272,7 @@ export default function InvoiceTemplate({ invoice, innerRef, className = "" }) {
             </tr>
           ))}
 
-          <tr className="h-4">
+          <tr className="h-full">
             <td className="border-r-[1.5px] border-black border-b-transparent border-t-transparent" />
             <td className="border-r-[1.5px] border-black border-b-transparent border-t-transparent" />
             <td className="border-r-[1.5px] border-black border-b-transparent border-t-transparent" />
@@ -338,13 +350,13 @@ export default function InvoiceTemplate({ invoice, innerRef, className = "" }) {
               Total
             </td>
             <td className="border-r-[1.5px] border-black px-1.5 py-1.5 text-center">
-              {totalQty > 0 ? `${totalQty} ${primaryUnit}` : ""}
             </td>
             <td colSpan={2} className="border-r-[1.5px] border-black" />
             <td className="px-1.5 py-1.5 text-right text-sm font-bold">₹ {fmt(inv.grand_total)}</td>
           </tr>
-        </tbody>
-      </table>
+          </tbody>
+        </table>
+      </div>
 
       <div className="border-b-[1.5px] border-black p-2 flex justify-between items-end">
         <div>
@@ -387,24 +399,24 @@ export default function InvoiceTemplate({ invoice, innerRef, className = "" }) {
           </thead>
           <tbody>
             {Object.values(taxGroups).map((tg, idx) => (
-              <tr key={idx} className="border-b-[1.5px] border-black">
-                <td className="border-r-[1.5px] border-black px-1.5 py-1.5 text-left">{tg.hsn}</td>
-                <td className="border-r-[1.5px] border-black px-1.5 py-1.5 text-right">{fmt(tg.taxable)}</td>
-                <td className="border-r-[1.5px] border-black px-1.5 py-1.5">{tg.gstRate / 2}%</td>
-                <td className="border-r-[1.5px] border-black px-1.5 py-1.5 text-right">{fmt(tg.cgstAmt)}</td>
-                <td className="border-r-[1.5px] border-black px-1.5 py-1.5">{tg.gstRate / 2}%</td>
-                <td className="border-r-[1.5px] border-black px-1.5 py-1.5 text-right">{fmt(tg.sgstAmt)}</td>
-                <td className="px-1.5 py-1.5 text-right">{fmt(tg.totalTax)}</td>
+              <tr key={idx}>
+                <td className="border-r-[1.5px] border-b-[1.5px] border-black px-1.5 py-1.5 text-left">{tg.hsn}</td>
+                <td className="border-r-[1.5px] border-b-[1.5px] border-black px-1.5 py-1.5 text-right">{fmt(tg.taxable)}</td>
+                <td className="border-r-[1.5px] border-b-[1.5px] border-black px-1.5 py-1.5">{tg.gstRate / 2}%</td>
+                <td className="border-r-[1.5px] border-b-[1.5px] border-black px-1.5 py-1.5 text-right">{tg.cgstAmt > 0 ? fmt(tg.cgstAmt) : ""}</td>
+                <td className="border-r-[1.5px] border-b-[1.5px] border-black px-1.5 py-1.5">{tg.gstRate / 2}%</td>
+                <td className="border-r-[1.5px] border-b-[1.5px] border-black px-1.5 py-1.5 text-right">{tg.sgstAmt > 0 ? fmt(tg.sgstAmt) : ""}</td>
+                <td className="border-b-[1.5px] border-black px-1.5 py-1.5 text-right">{tg.totalTax > 0 ? fmt(tg.totalTax) : ""}</td>
               </tr>
             ))}
             <tr className="font-bold">
               <td className="border-r-[1.5px] border-black px-1.5 py-1.5 text-right">Total</td>
-              <td className="border-r-[1.5px] border-black px-1.5 py-1.5 text-right">{fmt(inv.total_taxable_amount)}</td>
+              <td className="border-r-[1.5px] border-black px-1.5 py-1.5 text-right">{fmt(hsnTotalTaxable)}</td>
               <td className="border-r-[1.5px] border-black px-1.5 py-1.5" />
-              <td className="border-r-[1.5px] border-black px-1.5 py-1.5 text-right">{fmt(inv.total_cgst)}</td>
+              <td className="border-r-[1.5px] border-black px-1.5 py-1.5 text-right">{hsnTotalCgst > 0 ? fmt(hsnTotalCgst) : ""}</td>
               <td className="border-r-[1.5px] border-black px-1.5 py-1.5" />
-              <td className="border-r-[1.5px] border-black px-1.5 py-1.5 text-right">{fmt(inv.total_sgst)}</td>
-              <td className="px-1.5 py-1.5 text-right">{fmt(taxTotal)}</td>
+              <td className="border-r-[1.5px] border-black px-1.5 py-1.5 text-right">{hsnTotalSgst > 0 ? fmt(hsnTotalSgst) : ""}</td>
+              <td className="px-1.5 py-1.5 text-right">{hsnTotalTax > 0 ? fmt(hsnTotalTax) : ""}</td>
             </tr>
           </tbody>
         </table>
@@ -417,8 +429,8 @@ export default function InvoiceTemplate({ invoice, innerRef, className = "" }) {
         </span>
       </div>
 
-      <div className="flex justify-between p-2">
-        <div className="w-1/2 flex flex-col justify-end text-[11px] pr-2 mt-4">
+      <div className="flex justify-between p-1">
+        <div className="w-1/2 flex flex-col justify-end text-[11px] pr-2 mt-2">
           <div className="font-bold underline mb-1">Declaration</div>
           <div>
             We declare that this invoice shows the actual price of
@@ -444,19 +456,19 @@ export default function InvoiceTemplate({ invoice, innerRef, className = "" }) {
             <div className="font-bold">: {inv.bank_ifsc || ""}</div>
           </div>
 
-          <div className="mt-2 border-[1.5px] border-black px-1.5 py-1.5 text-right flex flex-col justify-between min-h-[90px] relative">
+          <div className="mt-1 border-[1.5px] border-black px-1.5 py-1.5 text-right flex flex-col justify-between min-h-[70px] relative">
             <div className="font-bold relative z-10">For {companyName}</div>
             {companyInfo?.signature_url && (
               <div className="absolute inset-0 flex items-center justify-end pr-2 pt-4 opacity-90 pointer-events-none">
                 <img src={companyInfo.signature_url} alt="Signature" className="max-h-12 max-w-[120px] object-contain" crossOrigin="anonymous" />
               </div>
             )}
-            <div className="relative z-10 mt-10">Authorised Signatory</div>
+            <div className="relative z-10 mt-6">Authorised Signatory</div>
           </div>
         </div>
       </div>
 
-      <div className="text-center py-2 mt-2 border-t-[1.5px] border-black text-[11px]">
+      <div className="text-center py-1 mt-1 border-t-[1.5px] border-black text-[11px]">
         This is a Computer Generated Invoice
       </div>
     </div>

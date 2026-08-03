@@ -112,7 +112,8 @@ export default function PurchaseTemplate({ purchase, innerRef, className = "" })
   return (
     <div
       ref={innerRef}
-      className={`purchase-container bg-white text-black text-[12px] leading-relaxed font-sans pb-2 ${className}`}
+      style={{ minHeight: "1056px", width: "760px", fontFamily: "Arial, Helvetica, sans-serif", WebkitTextStroke: "0.1px black" }}
+      className={`purchase-container bg-white text-black text-[12px] leading-relaxed font-sans flex flex-col ${className}`}
     >
       <div className="text-center font-bold text-lg mb-2">INVOICE</div>
 
@@ -121,14 +122,19 @@ export default function PurchaseTemplate({ purchase, innerRef, className = "" })
         <div className="grid grid-cols-2 border-b-[1.5px] border-black">
           <div className="border-r-[1.5px] border-black flex flex-col">
             {/* Company */}
-            <div className="p-2 border-b-[1.5px] border-black flex-1">
-              <div className="font-bold text-sm">{companyName}</div>
-              {companyAddress && (
-                <div className="whitespace-pre-line">{companyAddress}</div>
+            <div className="p-2 border-b-[1.5px] border-black flex gap-3 flex-1">
+              {companyInfo?.logo_url && (
+                <img src={companyInfo.logo_url} alt="Logo" className="w-16 h-16 object-contain" crossOrigin="anonymous" />
               )}
-              {inv.company_gstin && <div>GSTIN/UIN: {inv.company_gstin}</div>}
               <div>
-                State Name : {inv.company_state_name || ""}, Code : {inv.company_state_code || ""}
+                <div className="font-bold text-sm">{companyName}</div>
+                {companyAddress && (
+                  <div className="whitespace-pre-line">{companyAddress}</div>
+                )}
+                {inv.company_gstin && <div>GSTIN/UIN: {inv.company_gstin}</div>}
+                <div>
+                  State Name : {inv.company_state_name || ""}, Code : {inv.company_state_code || ""}
+                </div>
               </div>
             </div>
 
@@ -188,8 +194,9 @@ export default function PurchaseTemplate({ purchase, innerRef, className = "" })
         </div>
 
         {/* Items */}
-        <table className="w-full border-collapse border-b-[1.5px] border-black table-fixed">
-          <thead>
+        <div className="flex-1 flex flex-col">
+          <table className="w-full border-collapse border-b-[1.5px] border-black table-fixed h-full">
+            <thead>
             <tr className="border-b-[1.5px] border-black text-center h-8">
               <th className="border-r-[1.5px] border-black w-10 p-1 font-semibold">
                 Sl
@@ -199,8 +206,8 @@ export default function PurchaseTemplate({ purchase, innerRef, className = "" })
               <th className="border-r-[1.5px] border-black p-1 font-semibold">
                 Particulars
               </th>
-              <th className="border-r-[1.5px] border-black w-20 p-1 font-semibold">Quantity</th>
               <th className="border-r-[1.5px] border-black w-20 p-1 font-semibold">Rate</th>
+              <th className="border-r-[1.5px] border-black w-20 p-1 font-semibold">Quantity</th>
               <th className="border-r-[1.5px] border-black w-12 p-1 font-semibold">per</th>
               <th className="w-28 p-1 font-semibold">Amount</th>
             </tr>
@@ -217,11 +224,11 @@ export default function PurchaseTemplate({ purchase, innerRef, className = "" })
                     <div className="italic text-[10px] mt-0.5 text-slate-700 whitespace-pre-line">{item.narration}</div>
                   )}
                 </td>
-                <td className="border-r-[1.5px] border-black text-right p-1 font-bold border-b-transparent border-t-transparent">
-                  {item.quantity ? `${parseFloat(item.quantity).toFixed(2)}` : ""}
-                </td>
                 <td className="border-r-[1.5px] border-black text-right p-1 border-b-transparent border-t-transparent">
                   {item.rate ? fmt(item.rate) : ""}
+                </td>
+                <td className="border-r-[1.5px] border-black text-right p-1 font-bold border-b-transparent border-t-transparent">
+                  {item.quantity ? `${parseFloat(item.quantity).toFixed(2)}` : ""}
                 </td>
                 <td className="border-r-[1.5px] border-black text-center p-1 border-b-transparent border-t-transparent">
                   {item.quantity ? item.per || "" : ""}
@@ -275,7 +282,7 @@ export default function PurchaseTemplate({ purchase, innerRef, className = "" })
               </tr>
             )}
 
-            <tr className="h-40">
+            <tr className="h-full">
               <td className="border-r-[1.5px] border-black border-b-transparent border-t-transparent" />
               <td className="border-r-[1.5px] border-black border-b-transparent border-t-transparent" />
               <td className="border-r-[1.5px] border-black border-b-transparent border-t-transparent" />
@@ -292,6 +299,7 @@ export default function PurchaseTemplate({ purchase, innerRef, className = "" })
             </tr>
           </tbody>
         </table>
+        </div>
 
         {/* Bottom Section */}
         <div className="flex">
