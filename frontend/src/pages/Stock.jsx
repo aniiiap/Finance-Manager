@@ -1,4 +1,4 @@
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import { DateFilter } from "../components/ui/DateFilter"
 import { useData } from "../context/DataContext"
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
@@ -7,6 +7,7 @@ import { Button } from "../components/ui/button"
 import { Modal, ConfirmModal } from "../components/ui/modal"
 import { Plus, Trash2, Package, ArrowDownToLine, ArrowUpFromLine, Activity, Search, Edit2 } from "lucide-react"
 import { ExportButtons } from "../components/ui/ExportButtons"
+import { Pagination } from "../components/ui/pagination"
 import { useAuth } from "../context/AuthContext"
 
 export default function Stock() {
@@ -29,6 +30,7 @@ export default function Stock() {
   // Filters & Bulk Delete for Transactions
   const [searchQuery, setSearchQuery] = useState('')
   const [filterDate, setFilterDate] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
   const [selectedTxIds, setSelectedTxIds] = useState([])
 
   const handleBulkDeleteTx = async () => {
@@ -37,8 +39,8 @@ export default function Stock() {
     if (success) setSelectedTxIds([]);
   }
 
-  const toggleSelectAllTx = (e, items) => {
-    if (e.target.checked) setSelectedTxIds(items.map(i => i.id));
+  const toggleSelectAllTx = (e) => {
+    if (e.target.checked) setSelectedTxIds(paginatedTransactions.map(i => i.id));
     else setSelectedTxIds([]);
   }
 
@@ -61,6 +63,15 @@ export default function Stock() {
     const dateMatch = filterDate ? (tx.date || '').startsWith(filterDate) : true;
     return searchMatch && dateMatch;
   });
+
+  // Pagination logic
+  const pageSize = 10;
+  const totalPages = Math.ceil(filteredTransactions.length / pageSize);
+  const paginatedTransactions = filteredTransactions.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, filterDate]);
 
   const handleAddItem = (e) => {
     e.preventDefault()
@@ -263,8 +274,8 @@ export default function Stock() {
                         <input 
                           type="checkbox" 
                           className="cursor-pointer rounded border-slate-300 w-4 h-4"
-                          checked={filteredTransactions.length > 0 && selectedTxIds.length === filteredTransactions.length}
-                          onChange={(e) => toggleSelectAllTx(e, filteredTransactions)}
+                          checked={paginatedTransactions.length > 0 && selectedTxIds.length === paginatedTransactions.length}
+                          onChange={toggleSelectAllTx}
                         />
                       </TableHead>
                     )}
@@ -275,7 +286,11 @@ export default function Stock() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredTransactions.map(tx => (
+                  {paginatedTransactions.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={user?.role === 'ADMIN' ? 5 : 4} className="text-center py-6 text-slate-500">No transactions found.</TableCell>
+                    </TableRow>
+                  ) : paginatedTransactions.map(tx => (
                     <TableRow key={tx.id} className={selectedTxIds.includes(tx.id) ? 'bg-red-50/50' : ''}>
                       {user?.role === 'ADMIN' && (
                         <TableCell>
@@ -318,14 +333,10 @@ export default function Stock() {
                       )}
                     </TableRow>
                   ))}
-                  {filteredTransactions.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={user?.role === 'ADMIN' ? 5 : 4} className="text-center py-6 text-slate-500">No recent activity.</TableCell>
-                    </TableRow>
-                  )}
                 </TableBody>
               </Table>
             </div>
+            <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
           </CardContent>
         </Card>
       </div>

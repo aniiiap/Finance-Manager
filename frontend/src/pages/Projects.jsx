@@ -6,9 +6,10 @@ import { Modal, ConfirmModal } from "../components/ui/modal"
 import { DateFilter } from "../components/ui/DateFilter"
 import { ExportButtons } from "../components/ui/ExportButtons"
 import { useData } from "../context/DataContext"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { formatCurrency } from "../data/mock"
 import { Link } from "react-router-dom"
+import { Pagination } from "../components/ui/pagination"
 import { IndianRupee, PieChart, Plus, Trash2, Edit2, Search } from "lucide-react"
 import { useAuth } from "../context/AuthContext"
 
@@ -23,6 +24,7 @@ export default function Projects() {
   // New State for Filters and Bulk Delete
   const [searchTerm, setSearchTerm] = useState('')
   const [filterDate, setFilterDate] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
   const [selectedIds, setSelectedIds] = useState([])
 
   const handleSubmit = (e) => {
@@ -60,11 +62,28 @@ export default function Projects() {
     setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
   }
 
-  const filteredProjects = projects.filter(p => {
-    const searchMatch = p.name?.toLowerCase().includes(searchTerm.toLowerCase()) || p.client?.toLowerCase().includes(searchTerm.toLowerCase());
-    const dateMatch = filterDate ? (p.created_at || p.updated_at || '').startsWith(filterDate) : true;
-    return searchMatch && dateMatch;
+  const filteredProjects = projects.filter(project => {
+    const q = searchTerm.toLowerCase();
+    const clientName = clients.find(c => c.id === project.client_id)?.name || '';
+    const matchesSearch = (project.name || '').toLowerCase().includes(q) || 
+                          clientName.toLowerCase().includes(q);
+    const matchesDate = filterDate ? (project.created_at || project.updated_at || '').startsWith(filterDate) : true;
+    return matchesSearch && matchesDate;
   });
+
+  // Pagination logic
+  const pageSize = 10;
+  const totalPages = Math.ceil(filteredProjects.length / pageSize);
+  const paginatedProjects = filteredProjects.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterDate]);
+
+  const toggleSelectAll = (e) => {
+    if (e.target.checked) setSelectedIds(paginatedProjects.map(p => p.id));
+    else setSelectedIds([]);
+  }
 
   const exportData = filteredProjects.map((project) => {
     const projectTxs = transactions.filter(t => t.project_id === project.id || t.project === project.name)
@@ -123,7 +142,11 @@ export default function Projects() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-        {filteredProjects.map((project) => {
+        {paginatedProjects.length === 0 ? (
+          <div className="col-span-full flex flex-col items-center justify-center p-8 bg-slate-50 border border-slate-200 rounded-lg">
+            <p className="text-slate-500 font-medium">No projects found.</p>
+          </div>
+        ) : paginatedProjects.map((project) => {
           const projectTxs = transactions.filter(t => t.project_id === project.id || t.project === project.name)
           const received = projectTxs.filter(t => t.type === 'Income').reduce((sum, t) => sum + Number(t.amount), 0)
           const expenses = projectTxs.filter(t => t.type === 'Expense').reduce((sum, t) => sum + Number(t.amount), 0)
@@ -201,12 +224,11 @@ export default function Projects() {
             </Card>
           </Link>
         )})}
-        {filteredProjects.length === 0 && (
-          <div className="col-span-full py-12 text-center text-slate-500 bg-slate-50 rounded-lg border border-dashed">
-            No projects found matching your criteria.
-          </div>
-        )}
       </div>
+
+      {totalPages > 0 && (
+        <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
+      )}
 
       <Modal
         isOpen={isModalOpen}

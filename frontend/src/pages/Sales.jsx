@@ -12,6 +12,7 @@ import { apiFetch } from '../lib/api'
 import { useToast } from "../context/ToastContext"
 import { DateFilter } from "../components/ui/DateFilter"
 import { ExportButtons } from "../components/ui/ExportButtons"
+import { Pagination } from "../components/ui/pagination"
 
 const gstStateCodes = {
   "01": "Jammu & Kashmir", "02": "Himachal Pradesh", "03": "Punjab", "04": "Chandigarh",
@@ -46,6 +47,7 @@ export default function Sales() {
   const [invoices, setInvoices] = useState([])
   const [searchQuery, setSearchQuery] = useState("")
   const [filterDate, setFilterDate] = useState("")
+  const [currentPage, setCurrentPage] = useState(1)
   const [currentInvoice, setCurrentInvoice] = useState(null)
   const [companySettings, setCompanySettings] = useState(null)
   const [showSettingsModal, setShowSettingsModal] = useState(false)
@@ -516,11 +518,20 @@ export default function Sales() {
   }
 
   const filteredInvoices = invoices.filter(inv => {
-    const searchMatch = (inv.invoice_no || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
-                        (inv.buyer_name || '').toLowerCase().includes(searchQuery.toLowerCase());
-    const dateMatch = filterDate ? (inv.date || '').startsWith(filterDate) : true;
-    return searchMatch && dateMatch;
-  });
+    const matchesSearch = inv.buyer_name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          inv.invoice_no?.toLowerCase().includes(searchQuery.toLowerCase())
+    const matchesDate = filterDate ? inv.date?.startsWith(filterDate) : true
+    return matchesSearch && matchesDate
+  })
+
+  // Pagination logic
+  const pageSize = 10;
+  const totalPages = Math.ceil(filteredInvoices.length / pageSize);
+  const paginatedInvoices = filteredInvoices.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, filterDate]);
 
   const exportData = filteredInvoices.map((inv, idx) => ({
     "Sr No": idx + 1,
@@ -592,11 +603,11 @@ export default function Sales() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredInvoices.length === 0 ? (
+                {paginatedInvoices.length === 0 ? (
                   <TableRow><TableCell colSpan={6} className="text-center py-4 text-slate-500">No invoices found.</TableCell></TableRow>
-                ) : filteredInvoices.map((inv, idx) => (
+                ) : paginatedInvoices.map((inv, idx) => (
                   <TableRow key={inv.id}>
-                    <TableCell>{idx + 1}</TableCell>
+                    <TableCell>{(currentPage - 1) * pageSize + idx + 1}</TableCell>
                     <TableCell className="font-medium">{inv.invoice_no}</TableCell>
                     <TableCell>{new Date(inv.date).toLocaleDateString()}</TableCell>
                     <TableCell>{inv.buyer_name}</TableCell>
@@ -618,6 +629,7 @@ export default function Sales() {
                 ))}
               </TableBody>
             </Table>
+            <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
           </CardContent>
         </Card>
 

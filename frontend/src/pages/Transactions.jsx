@@ -9,6 +9,7 @@ import { ExportButtons } from "../components/ui/ExportButtons"
 import { useData } from "../context/DataContext"
 import { useAuth } from "../context/AuthContext"
 import { formatCurrency } from "../data/mock"
+import { Pagination } from "../components/ui/pagination"
 import { Filter, Download, Plus, ArrowLeft, Search, Trash2, Edit2 } from "lucide-react"
 
 export default function Transactions() {
@@ -313,21 +314,7 @@ export default function Transactions() {
               </TableBody>
             </Table>
           </div>
-          
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between mt-6">
-              <span className="text-sm text-slate-500">
-                Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, filteredTransactions.length)} of {filteredTransactions.length} entries
-              </span>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>Previous</Button>
-                <div className="flex items-center justify-center px-3 text-sm font-medium border border-slate-200 rounded-md bg-slate-50 text-slate-600">
-                  Page {currentPage} of {totalPages}
-                </div>
-                <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}>Next</Button>
-              </div>
-            </div>
-          )}
+          <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
         </CardContent>
       </Card>
 

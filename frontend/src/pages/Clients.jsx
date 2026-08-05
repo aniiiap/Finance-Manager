@@ -6,7 +6,8 @@ import { Modal, ConfirmModal } from "../components/ui/modal"
 import { ExportButtons } from "../components/ui/ExportButtons"
 import { DateFilter } from "../components/ui/DateFilter"
 import { useData } from "../context/DataContext"
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { Pagination } from "../components/ui/pagination"
 import { Plus, Trash2, Edit2, Search } from "lucide-react"
 import { useAuth } from "../context/AuthContext"
 
@@ -21,6 +22,7 @@ export default function Clients() {
   // Filters & Bulk Delete
   const [searchTerm, setSearchTerm] = useState('')
   const [filterDate, setFilterDate] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
   const [selectedIds, setSelectedIds] = useState([])
 
   const handleSubmit = (e) => {
@@ -57,6 +59,15 @@ export default function Clients() {
     return matchesSearch && matchesDate;
   });
 
+  // Pagination logic
+  const pageSize = 10;
+  const totalPages = Math.ceil(filteredClients.length / pageSize);
+  const paginatedClients = filteredClients.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterDate]);
+
   const handleBulkDelete = async () => {
     if (!window.confirm(`Are you sure you want to delete ${selectedIds.length} clients?`)) return;
     const success = await bulkDelete('people', selectedIds);
@@ -64,7 +75,7 @@ export default function Clients() {
   }
 
   const toggleSelectAll = (e) => {
-    if (e.target.checked) setSelectedIds(filteredClients.map(c => c.id));
+    if (e.target.checked) setSelectedIds(paginatedClients.map(c => c.id));
     else setSelectedIds([]);
   }
 
@@ -156,13 +167,13 @@ export default function Clients() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredClients.length === 0 ? (
+              {paginatedClients.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={user?.role === 'ADMIN' ? 7 : 6} className="text-center py-8 text-slate-500">
                     No clients found.
                   </TableCell>
                 </TableRow>
-              ) : filteredClients.map((client) => {
+              ) : paginatedClients.map((client) => {
                 const clientProjectsCount = projects.filter(p => p.client_id === client.id).length;
                 return (
                 <TableRow key={client.id} className={selectedIds.includes(client.id) ? 'bg-red-50/50' : ''}>
@@ -209,6 +220,7 @@ export default function Clients() {
               )})}
             </TableBody>
             </Table>
+            <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
           </div>
         </CardContent>
       </Card>

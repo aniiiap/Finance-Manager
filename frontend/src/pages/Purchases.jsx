@@ -8,6 +8,7 @@ import html2pdf from "html2pdf.js"
 import { Badge } from "../components/ui/badge"
 import { DateFilter } from "../components/ui/DateFilter"
 import { ExportButtons } from "../components/ui/ExportButtons"
+import { Pagination } from "../components/ui/pagination"
 
 import PurchaseTemplate from "../components/PurchaseTemplate"
 import { Modal } from "../components/ui/modal"
@@ -57,6 +58,7 @@ export default function Purchases() {
   // Filters & Bulk Delete
   const [searchQuery, setSearchQuery] = useState('')
   const [filterDate, setFilterDate] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
   const [selectedIds, setSelectedIds] = useState([])
   
   const [formData, setFormData] = useState({
@@ -407,10 +409,19 @@ export default function Purchases() {
 
   const filteredPurchases = purchases.filter(p => {
     const searchMatch = (p.purchase_no || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
-                        (p.vendor_name || '').toLowerCase().includes(searchQuery.toLowerCase());
+                        (p.supplier_name || '').toLowerCase().includes(searchQuery.toLowerCase());
     const dateMatch = filterDate ? (p.date || '').startsWith(filterDate) : true;
     return searchMatch && dateMatch;
   });
+
+  // Pagination logic
+  const pageSize = 10;
+  const totalPages = Math.ceil(filteredPurchases.length / pageSize);
+  const paginatedPurchases = filteredPurchases.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, filterDate]);
 
   // Effect to automatically generate and upload PDF when PurchaseToGenerate is set
   useEffect(() => {
@@ -644,35 +655,35 @@ export default function Purchases() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredPurchases.length === 0 ? (
+                {paginatedPurchases.length === 0 ? (
                   <TableRow><TableCell colSpan={user?.role === 'ADMIN' ? 7 : 6} className="text-center py-4 text-slate-500">No purchases found.</TableCell></TableRow>
-                ) : filteredPurchases.map((inv, idx) => (
-                  <TableRow key={inv.id} className={selectedIds.includes(inv.id) ? 'bg-red-50/50' : ''}>
+                ) : paginatedPurchases.map((p, idx) => (
+                  <TableRow key={p.id} className={selectedIds.includes(p.id) ? 'bg-red-50/50' : ''}>
                     {user?.role === 'ADMIN' && (
                       <TableCell>
                         <input 
                           type="checkbox" 
                           className="cursor-pointer rounded border-slate-300 w-4 h-4"
-                          checked={selectedIds.includes(inv.id)}
-                          onChange={() => toggleSelect(inv.id)}
+                          checked={selectedIds.includes(p.id)}
+                          onChange={() => toggleSelect(p.id)}
                         />
                       </TableCell>
                     )}
-                    <TableCell>{idx + 1}</TableCell>
-                    <TableCell className="font-medium">{inv.purchase_no}</TableCell>
-                    <TableCell>{new Date(inv.date).toLocaleDateString()}</TableCell>
-                    <TableCell>{inv.vendor_name}</TableCell>
-                    <TableCell className="text-right font-medium">₹{parseFloat(inv.grand_total).toLocaleString()}</TableCell>
+                    <TableCell>{(currentPage - 1) * pageSize + idx + 1}</TableCell>
+                    <TableCell className="font-medium">{p.purchase_no}</TableCell>
+                    <TableCell>{new Date(p.date).toLocaleDateString()}</TableCell>
+                    <TableCell>{p.vendor_name}</TableCell>
+                    <TableCell className="text-right font-medium">₹{parseFloat(p.grand_total).toLocaleString()}</TableCell>
                     <TableCell className="text-center">
                       <div className="flex items-center justify-center gap-1">
-                            <Button variant="ghost" size="icon" onClick={() => handleOpenPdf(inv.id, false)} className="h-8 w-8 text-slate-500 hover:text-slate-900" title="View">
+                            <Button variant="ghost" size="icon" onClick={() => handleOpenPdf(p.id, false)} className="h-8 w-8 text-slate-500 hover:text-slate-900" title="View">
                               <Eye className="w-4 h-4" />
                             </Button>
-                            <Button variant="ghost" size="icon" onClick={() => handleOpenPdf(inv.id, true)} className="h-8 w-8 text-slate-500 hover:text-slate-900" title="Download">
+                            <Button variant="ghost" size="icon" onClick={() => handleOpenPdf(p.id, true)} className="h-8 w-8 text-slate-500 hover:text-slate-900" title="Download">
                               <Download className="w-4 h-4" />
                             </Button>
                             {user?.role === 'ADMIN' && (
-                                <Button variant="ghost" size="icon" onClick={() => deletePurchase(inv.id)} className="h-8 w-8 text-slate-400 hover:text-red-600" title="Delete">
+                                <Button variant="ghost" size="icon" onClick={() => deletePurchase(p.id)} className="h-8 w-8 text-slate-400 hover:text-red-600" title="Delete">
                                   <Trash2 className="w-4 h-4" />
                                 </Button>
                               )}
@@ -682,6 +693,7 @@ export default function Purchases() {
                 ))}
               </TableBody>
             </Table>
+            <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
           </CardContent>
         </Card>
 

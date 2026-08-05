@@ -1,4 +1,4 @@
-import { useState, useRef } from "react"
+import { useState, useEffect, useRef } from "react"
 import { DateFilter } from "../components/ui/DateFilter"
 import { useData } from "../context/DataContext"
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
@@ -6,6 +6,7 @@ import { Button } from "../components/ui/button"
 import { Modal, ConfirmModal } from "../components/ui/modal"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table"
 import { ExportButtons } from "../components/ui/ExportButtons"
+import { Pagination } from "../components/ui/pagination"
 import { Mail, Plus, Download, Edit2, Trash2, Search, Settings } from "lucide-react"
 import ReactQuill from 'react-quill-new'
 import 'react-quill-new/dist/quill.snow.css'
@@ -56,6 +57,7 @@ export default function Letters() {
   // Filters & Bulk Delete
   const [searchQuery, setSearchQuery] = useState('')
   const [filterDate, setFilterDate] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
   const [selectedIds, setSelectedIds] = useState([])
 
   const handleBulkDelete = async () => {
@@ -67,8 +69,6 @@ export default function Letters() {
   const toggleSelectAll = (e, items) => {
     if (e.target.checked) setSelectedIds(items.map(i => i.id));
     else setSelectedIds([]);
-  }
-
   const toggleSelect = (id) => {
     setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
   }
@@ -79,6 +79,20 @@ export default function Letters() {
     const dateMatch = filterDate ? (l.letter_date || '').startsWith(filterDate) : true;
     return searchMatch && dateMatch;
   });
+
+  // Pagination logic
+  const pageSize = 10;
+  const totalPages = Math.ceil(filteredLetters.length / pageSize);
+  const paginatedLetters = filteredLetters.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, filterDate]);
+
+  const toggleSelectAll = (e) => {
+    if (e.target.checked) setSelectedIds(paginatedLetters.map(i => i.id));
+    else setSelectedIds([]);
+  }
 
   const exportData = filteredLetters.map(letter => ({
     "Date": new Date(letter.letter_date).toLocaleDateString(),
@@ -232,8 +246,8 @@ export default function Letters() {
                       <input 
                         type="checkbox" 
                         className="cursor-pointer rounded border-slate-300 w-4 h-4"
-                        checked={filteredLetters.length > 0 && selectedIds.length === filteredLetters.length}
-                        onChange={(e) => toggleSelectAll(e, filteredLetters)}
+                        checked={paginatedLetters.length > 0 && selectedIds.length === paginatedLetters.length}
+                        onChange={toggleSelectAll}
                       />
                     </TableHead>
                   )}
@@ -244,26 +258,26 @@ export default function Letters() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredLetters.length === 0 ? (
+                {paginatedLetters.length === 0 ? (
                   <TableRow><TableCell colSpan={user?.role === 'ADMIN' ? 5 : 4} className="text-center py-4 text-slate-500">No letters found.</TableCell></TableRow>
-                ) : filteredLetters.map((letter) => (
-                  <TableRow key={letter.id} className={selectedIds.includes(letter.id) ? 'bg-red-50/50' : ''}>
+                ) : paginatedLetters.map((l) => (
+                  <TableRow key={l.id} className={selectedIds.includes(l.id) ? 'bg-red-50/50' : ''}>
                     {user?.role === 'ADMIN' && (
                       <TableCell>
                         <input 
                           type="checkbox" 
                           className="cursor-pointer rounded border-slate-300 w-4 h-4"
-                          checked={selectedIds.includes(letter.id)}
-                          onChange={() => toggleSelect(letter.id)}
+                          checked={selectedIds.includes(l.id)}
+                          onChange={() => toggleSelect(l.id)}
                         />
                       </TableCell>
                     )}
-                    <TableCell>{letter.letter_date ? new Date(letter.letter_date).toLocaleDateString() : 'N/A'}</TableCell>
-                  <TableCell className="font-medium">{letter.ref_no}</TableCell>
-                  <TableCell>{new Date(letter.created_at).toLocaleDateString()}</TableCell>
-                  <TableCell className="text-right space-x-2">
+                    <TableCell>{l.letter_date ? new Date(l.letter_date).toLocaleDateString() : 'N/A'}</TableCell>
+                    <TableCell className="font-medium">{l.ref_no}</TableCell>
+                    <TableCell>{new Date(l.created_at).toLocaleDateString()}</TableCell>
+                    <TableCell className="text-right space-x-2">
                       <button 
-                        onClick={() => handleDownload(letter)}
+                        onClick={() => handleDownload(l)}
                         className="p-2 text-slate-400 hover:text-indigo-600 rounded-md hover:bg-slate-100 transition-colors"
                         title="Download PDF"
                       >
@@ -272,14 +286,14 @@ export default function Letters() {
                       {user?.role === 'ADMIN' && (
                         <>
                           <button 
-                            onClick={() => handleEditClick(letter)}
+                            onClick={() => handleEditClick(l)}
                             className="p-2 text-slate-400 hover:text-blue-600 rounded-md hover:bg-slate-100 transition-colors"
                             title="Edit Letter"
                           >
                             <Edit2 className="w-4 h-4" />
                           </button>
                           <button 
-                            onClick={() => setLetterToDelete(letter.id)}
+                            onClick={() => setLetterToDelete(l.id)}
                             className="p-2 text-slate-400 hover:text-red-600 rounded-md hover:bg-slate-100 transition-colors"
                             title="Delete Letter"
                           >
@@ -299,6 +313,7 @@ export default function Letters() {
               )}
             </TableBody>
           </Table>
+          <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
         </CardContent>
       </Card>
 
