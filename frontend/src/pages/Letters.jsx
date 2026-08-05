@@ -66,9 +66,6 @@ export default function Letters() {
     if (success) setSelectedIds([]);
   }
 
-  const toggleSelectAll = (e, items) => {
-    if (e.target.checked) setSelectedIds(items.map(i => i.id));
-    else setSelectedIds([]);
   const toggleSelect = (id) => {
     setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
   }
