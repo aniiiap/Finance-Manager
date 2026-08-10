@@ -29,7 +29,8 @@ export default function Stock() {
 
   // Filters & Bulk Delete for Transactions
   const [searchQuery, setSearchQuery] = useState('')
-  const [filterDate, setFilterDate] = useState('')
+  const [fromDate, setFromDate] = useState('')
+  const [toDate, setToDate] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [selectedTxIds, setSelectedTxIds] = useState([])
 
@@ -60,7 +61,9 @@ export default function Stock() {
   const filteredTransactions = inventoryTransactions.filter(tx => {
     const searchMatch = (tx.item_name || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
                         (tx.narration || '').toLowerCase().includes(searchQuery.toLowerCase());
-    const dateMatch = filterDate ? (tx.date || '').startsWith(filterDate) : true;
+    let dateMatch = true;
+    if (fromDate) dateMatch = dateMatch && new Date(tx.date) >= new Date(fromDate);
+    if (toDate) dateMatch = dateMatch && new Date(tx.date) <= new Date(toDate + 'T23:59:59');
     return searchMatch && dateMatch;
   });
 
@@ -71,7 +74,7 @@ export default function Stock() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, filterDate]);
+  }, [searchQuery, fromDate, toDate]);
 
   const handleAddItem = (e) => {
     e.preventDefault()
@@ -159,7 +162,7 @@ export default function Stock() {
         </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-4 items-center bg-white p-4 rounded-lg border shadow-sm">
+      <div className="flex flex-col sm:flex-row gap-4 items-center bg-white/80 backdrop-blur-md p-4 rounded-xl border border-indigo-100 shadow-[0_4px_20px_rgb(0,0,0,0.03)]">
         <div className="relative flex-1 w-full">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
           <input 
@@ -171,7 +174,7 @@ export default function Stock() {
           />
         </div>
         <div className="flex gap-2 w-full sm:w-auto">
-          <DateFilter value={filterDate} onChange={setFilterDate} />
+          <DateFilter fromDate={fromDate} toDate={toDate} onFromChange={setFromDate} onToChange={setToDate} />
         </div>
       </div>
 
@@ -218,7 +221,7 @@ export default function Stock() {
             <div className="overflow-auto max-h-[500px]">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-slate-50">
+                  <TableRow className="bg-indigo-50/40">
                     <TableHead>Material</TableHead>
                     <TableHead className="text-right">Total In</TableHead>
                     <TableHead className="text-right">Total Out</TableHead>
@@ -238,10 +241,10 @@ export default function Stock() {
                       <TableCell className="text-right font-bold text-slate-900">{item.balance} {item.unit}</TableCell>
                       {user?.role === 'ADMIN' && (
                         <TableCell className="flex gap-2">
-                          <button onClick={() => { setItemToEdit(item); setIsEditItemModalOpen(true); }} className="text-slate-400 hover:text-blue-600 transition-colors">
+                          <button onClick={() => { setItemToEdit(item); setIsEditItemModalOpen(true); }} className="text-indigo-400 hover:text-indigo-600 hover:scale-110 transition-all">
                             <Edit2 className="w-4 h-4" />
                           </button>
-                          <button onClick={() => setItemToDelete(item.id)} className="text-slate-400 hover:text-red-600 transition-colors">
+                          <button onClick={() => setItemToDelete(item.id)} className="text-rose-400 hover:text-rose-600 hover:scale-110 transition-all">
                             <Trash2 className="w-4 h-4" />
                           </button>
                         </TableCell>
@@ -268,7 +271,7 @@ export default function Stock() {
             <div className="overflow-auto max-h-[500px]">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-slate-50">
+                  <TableRow className="bg-indigo-50/40">
                     {user?.role === 'ADMIN' && (
                       <TableHead className="w-12">
                         <input 
@@ -323,10 +326,10 @@ export default function Stock() {
                       </TableCell>
                       {user?.role === 'ADMIN' && (
                         <TableCell className="flex gap-2">
-                          <button onClick={() => { setTxToEdit(tx); setTxType(tx.type); setTxItemId(tx.item_id); setIsEditTxModalOpen(true); }} className="text-slate-400 hover:text-blue-600 transition-colors">
+                          <button onClick={() => { setTxToEdit(tx); setTxType(tx.type); setTxItemId(tx.item_id); setIsEditTxModalOpen(true); }} className="text-indigo-400 hover:text-indigo-600 hover:scale-110 transition-all">
                             <Edit2 className="w-4 h-4" />
                           </button>
-                          <button onClick={() => setTxToDelete(tx.id)} className="text-slate-400 hover:text-red-600 transition-colors">
+                          <button onClick={() => setTxToDelete(tx.id)} className="text-rose-400 hover:text-rose-600 hover:scale-110 transition-all">
                             <Trash2 className="w-4 h-4" />
                           </button>
                         </TableCell>

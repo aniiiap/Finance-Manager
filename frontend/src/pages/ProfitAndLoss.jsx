@@ -1,3 +1,4 @@
+import { useAuth } from '../context/AuthContext'
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table"
 import { useData } from "../context/DataContext"
@@ -6,9 +7,16 @@ import { ExportButtons } from "../components/ui/ExportButtons"
 import { useState } from "react"
 
 export default function ProfitAndLoss() {
+  const { user } = useAuth();
   const { transactions, projects, categories, people } = useData()
   const [selectedProject, setSelectedProject] = useState("all")
   const [selectedClient, setSelectedClient] = useState("all")
+
+  const actualClients = people.filter(p => {
+    if (!p.company) return false;
+    if (user?.role === 'ADMIN') return true;
+    return projects.some(proj => proj.client_id === p.id);
+  });
 
   const getPartyName = (idOrName) => {
     if (!idOrName) return '--';
@@ -26,7 +34,19 @@ export default function ProfitAndLoss() {
 
   const filteredTransactions = transactions.filter(t => {
     const projectMatch = selectedProject === "all" || (t.project_name || t.project) === selectedProject;
-    const clientMatch = selectedClient === "all" || getPartyName(t.party_id || t.party) === selectedClient;
+    
+    let clientMatch = true;
+    if (selectedClient !== "all") {
+      const partyName = t.party_name || getPartyName(t.party_id || t.party);
+      if (partyName === selectedClient) {
+        clientMatch = true;
+      } else {
+        const projName = t.project_name || t.project;
+        const txProject = projects.find(p => p.name === projName || p.id === t.project_id);
+        const projClientName = txProject ? (txProject.client_name || getPartyName(txProject.client_id || txProject.client)) : null;
+        clientMatch = (projClientName === selectedClient);
+      }
+    }
     return projectMatch && clientMatch;
   });
 
@@ -107,15 +127,37 @@ export default function ProfitAndLoss() {
     )
   }
 
-  const exportData = filteredTransactions.map(tx => ({
+  const exportData = filteredTransactions.map((tx, idx) => ({
+    "Sr. No": idx + 1,
     "Date": new Date(tx.date).toLocaleDateString(),
     "Type": tx.type,
     "Category": getCategoryName(tx.category_id || tx.category),
     "Project": tx.project_name || tx.project,
     "Client/Party": tx.party_name || getPartyName(tx.party_id || tx.party),
-    "Amount": tx.amount,
+    "Credit (In)": tx.type === 'Income' ? tx.amount : '',
+    "Debit (Out)": tx.type === 'Expense' ? tx.amount : '',
+    "Total Amount": tx.amount,
     "Narration": tx.description || tx.narration || ''
   }))
+
+  const totalCredit = filteredTransactions.reduce((sum, tx) => sum + (tx.type === 'Income' ? Number(tx.amount) : 0), 0)
+  const totalDebit = filteredTransactions.reduce((sum, tx) => sum + (tx.type === 'Expense' ? Number(tx.amount) : 0), 0)
+  const totalAmount = filteredTransactions.reduce((sum, tx) => sum + Number(tx.amount), 0)
+
+  if (filteredTransactions.length > 0) {
+    exportData.push({
+      "Sr. No": "",
+      "Date": "",
+      "Type": "",
+      "Category": "",
+      "Project": "",
+      "Client/Party": "Total",
+      "Credit (In)": totalCredit,
+      "Debit (Out)": totalDebit,
+      "Total Amount": totalAmount,
+      "Narration": ""
+    })
+  }
 
   return (
     <div className="space-y-6">
@@ -127,7 +169,7 @@ export default function ProfitAndLoss() {
         <div className="flex gap-4 items-end flex-wrap">
           <ExportButtons 
             data={exportData} 
-            columns={["Date", "Type", "Category", "Project", "Client/Party", "Amount", "Narration"]}
+            columns={["Sr. No", "Date", "Type", "Category", "Project", "Client/Party", "Credit (In)", "Debit (Out)", "Total Amount", "Narration"]}
             filename={`ProfitAndLoss_${new Date().toISOString().split('T')[0]}`}
             title="Profit and Loss Statement"
           />
@@ -136,10 +178,10 @@ export default function ProfitAndLoss() {
             <select 
               className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900"
               value={selectedClient} 
-              onChange={(e) => setSelectedClient(e.target.value)}
+              onChange={(e) => { setSelectedClient(e.target.value); setSelectedProject('all'); }}
             >
               <option value="all">All Clients</option>
-              {people.map(p => (
+              {actualClients.map(p => (
                 <option key={p.id} value={p.name}>{p.name}</option>
               ))}
             </select>
@@ -152,7 +194,11 @@ export default function ProfitAndLoss() {
               onChange={(e) => setSelectedProject(e.target.value)}
             >
               <option value="all">All Projects</option>
-              {projects.map(p => (
+              {projects.filter(p => {
+                if (selectedClient === 'all') return true;
+                const client = people.find(c => c.name === selectedClient);
+                return client ? p.client_id === client.id : true;
+              }).map(p => (
                 <option key={p.id} value={p.name}>{p.name}</option>
               ))}
             </select>

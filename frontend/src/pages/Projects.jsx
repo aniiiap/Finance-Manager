@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table"
 import { Badge } from "../components/ui/badge"
 import { Progress } from "../components/ui/progress"
 import { Button } from "../components/ui/button"
@@ -10,7 +11,7 @@ import { useState, useEffect } from "react"
 import { formatCurrency } from "../data/mock"
 import { Link } from "react-router-dom"
 import { Pagination } from "../components/ui/pagination"
-import { IndianRupee, PieChart, Plus, Trash2, Edit2, Search } from "lucide-react"
+import { IndianRupee, PieChart, Plus, Trash2, Edit2, Search, Upload } from "lucide-react"
 import { useAuth } from "../context/AuthContext"
 
 export default function Projects() {
@@ -23,18 +24,48 @@ export default function Projects() {
   
   // New State for Filters and Bulk Delete
   const [searchTerm, setSearchTerm] = useState('')
-  const [filterDate, setFilterDate] = useState('')
+  const [fromDate, setFromDate] = useState('')
+  const [toDate, setToDate] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [selectedIds, setSelectedIds] = useState([])
 
-  const handleSubmit = (e) => {
+  const handleFileUpload = async (projectId, file) => {
+    if (!file) return;
+    const fileData = new FormData();
+    fileData.append('file', file);
+    fileData.append('project_id', projectId);
+    fileData.append('upload_date', new Date().toISOString().split('T')[0]);
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/progress/files`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+        body: fileData
+      });
+      if (res.ok) alert("File uploaded successfully");
+      else alert("File upload failed");
+    } catch (err) {
+      console.error('File upload failed', err);
+      alert("Error uploading file");
+    }
+  }
+
+  const handleSubmit = async (e) => {
     e.preventDefault()
     const formData = new FormData(e.target)
-    addProject({
+    const newProj = await addProject({
       name: formData.get('name'),
       client_id: formData.get('client_id'),
       budget: formData.get('budget'),
     })
+    
+    if (newProj && newProj.id) {
+      const fileInput = e.target.querySelector('input[name="project_file"]');
+      if (fileInput && fileInput.files.length > 0) {
+        for (let i = 0; i < fileInput.files.length; i++) {
+          await handleFileUpload(newProj.id, fileInput.files[i]);
+        }
+      }
+    }
     setIsModalOpen(false)
   }
 
@@ -67,7 +98,9 @@ export default function Projects() {
     const clientName = clients.find(c => c.id === project.client_id)?.name || '';
     const matchesSearch = (project.name || '').toLowerCase().includes(q) || 
                           clientName.toLowerCase().includes(q);
-    const matchesDate = filterDate ? (project.created_at || project.updated_at || '').startsWith(filterDate) : true;
+    let matchesDate = true;
+    if (fromDate) matchesDate = matchesDate && new Date(project.created_at || project.updated_at || '') >= new Date(fromDate);
+    if (toDate) matchesDate = matchesDate && new Date(project.created_at || project.updated_at || '') <= new Date(toDate + 'T23:59:59');
     return matchesSearch && matchesDate;
   });
 
@@ -78,7 +111,7 @@ export default function Projects() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, filterDate]);
+  }, [searchTerm, fromDate, toDate]);
 
   const toggleSelectAll = (e) => {
     if (e.target.checked) setSelectedIds(paginatedProjects.map(p => p.id));
@@ -125,7 +158,7 @@ export default function Projects() {
         </div>
       </div>
 
-      <div className="flex gap-4 items-center bg-white p-4 rounded-lg border shadow-sm">
+      <div className="flex gap-4 items-center bg-white/80 backdrop-blur-md p-4 rounded-xl border border-indigo-100 shadow-[0_4px_20px_rgb(0,0,0,0.03)]">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
           <input 
@@ -137,94 +170,131 @@ export default function Projects() {
           />
         </div>
         <div>
-          <DateFilter value={filterDate} onChange={setFilterDate} />
+          <DateFilter fromDate={fromDate} toDate={toDate} onFromChange={setFromDate} onToChange={setToDate} />
         </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-        {paginatedProjects.length === 0 ? (
-          <div className="col-span-full flex flex-col items-center justify-center p-8 bg-slate-50 border border-slate-200 rounded-lg">
-            <p className="text-slate-500 font-medium">No projects found.</p>
-          </div>
-        ) : paginatedProjects.map((project) => {
-          const projectTxs = transactions.filter(t => t.project_id === project.id || t.project === project.name)
-          const received = projectTxs.filter(t => t.type === 'Income').reduce((sum, t) => sum + Number(t.amount), 0)
-          const expenses = projectTxs.filter(t => t.type === 'Expense').reduce((sum, t) => sum + Number(t.amount), 0)
-          const progress = project.budget > 0 ? Math.min(100, Math.round((expenses / project.budget) * 100)) : 0
-
-          return (
-          <Link key={project.id} to={`/projects/${project.id}`}>
-            <Card className={`hover:shadow-md transition-shadow cursor-pointer h-full flex flex-col ${selectedIds.includes(project.id) ? 'ring-2 ring-red-500 bg-red-50/50' : ''}`}>
-              <CardHeader className="pb-4">
-                <div className="flex justify-between items-start gap-4">
-                  <div className="flex items-start gap-3 flex-1 min-w-0 pr-4">
-                    {user?.role === 'ADMIN' && (
+      <Card>
+        <CardHeader>
+          <CardTitle>All Projects</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto w-full">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-indigo-50/40 hover:bg-indigo-50/60">
+                  {user?.role === 'ADMIN' && (
+                    <TableHead className="w-12">
                       <input 
                         type="checkbox" 
-                        className="mt-1.5 cursor-pointer w-4 h-4"
-                        checked={selectedIds.includes(project.id)}
-                        onChange={(e) => toggleSelect(e, project.id)}
-                        onClick={e => e.stopPropagation()}
+                        className="cursor-pointer rounded border-slate-300 w-4 h-4"
+                        checked={filteredProjects.length > 0 && selectedIds.length === paginatedProjects.length}
+                        onChange={toggleSelectAll}
                       />
-                    )}
-                    <div className="min-w-0">
-                      <CardTitle className="text-lg truncate" title={project.name}>{project.name}</CardTitle>
-                      <p className="text-sm text-slate-500 mt-1 truncate" title={project.client}>{project.client}</p>
-                    </div>
-                  </div>
-                  <div className="flex flex-col items-end gap-2">
-                    <Badge variant={project.status === 'Active' ? 'success' : 'outline'}>{project.status || 'Active'}</Badge>
-                    {user?.role === 'ADMIN' && (
-                      <div className="flex gap-1 mt-1">
-                        <button 
-                          onClick={(e) => {
-                            e.preventDefault()
-                            setProjectToEdit(project)
-                            setIsEditModalOpen(true)
-                          }}
-                          className="text-slate-400 hover:text-blue-600 transition-colors p-1"
-                          title="Edit Project"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button 
-                          onClick={(e) => {
-                            e.preventDefault()
-                            setProjectToDelete(project.id)
-                          }}
-                          className="text-slate-400 hover:text-red-600 transition-colors p-1"
-                          title="Delete Project"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="flex-1 flex flex-col gap-6">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <div className="text-xs text-slate-500 mb-1 flex items-center gap-1"><IndianRupee className="w-3 h-3"/> Budget</div>
-                    <div className="font-semibold text-sm">{formatCurrency(project.budget)}</div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-slate-500 mb-1 flex items-center gap-1"><PieChart className="w-3 h-3"/> Profit</div>
-                    <div className="font-semibold text-sm text-green-600">{formatCurrency(received - expenses)}</div>
-                  </div>
-                </div>
-                <div className="mt-auto">
-                  <div className="flex justify-between items-end mb-2">
-                    <span className="text-xs font-medium text-slate-700">Progress</span>
-                    <span className="text-xs text-slate-500">{progress}%</span>
-                  </div>
-                  <Progress value={progress} />
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
-        )})}
-      </div>
+                    </TableHead>
+                  )}
+                  <TableHead>Project Name</TableHead>
+                  <TableHead>Client</TableHead>
+                  <TableHead>Budget</TableHead>
+                  <TableHead>Profit</TableHead>
+                  <TableHead>Progress</TableHead>
+                  <TableHead>Status</TableHead>
+                  {user?.role === 'ADMIN' && <TableHead className="w-[120px] text-right">Actions</TableHead>}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {paginatedProjects.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={user?.role === 'ADMIN' ? 8 : 7} className="text-center py-8 text-slate-500">
+                      No projects found.
+                    </TableCell>
+                  </TableRow>
+                ) : paginatedProjects.map((project) => {
+                  const projectTxs = transactions.filter(t => t.project_id === project.id || t.project === project.name)
+                  const received = projectTxs.filter(t => t.type === 'Income').reduce((sum, t) => sum + Number(t.amount), 0)
+                  const expenses = projectTxs.filter(t => t.type === 'Expense').reduce((sum, t) => sum + Number(t.amount), 0)
+                  const progress = project.budget > 0 ? Math.min(100, Math.round((expenses / project.budget) * 100)) : 0
+
+                  return (
+                    <TableRow 
+                      key={project.id} 
+                      className={`cursor-pointer ${selectedIds.includes(project.id) ? 'bg-red-50/50' : ''}`}
+                      onClick={() => window.location.href = `/projects/${project.id}`}
+                    >
+                      {user?.role === 'ADMIN' && (
+                        <TableCell onClick={e => e.stopPropagation()}>
+                          <input 
+                            type="checkbox" 
+                            className="cursor-pointer rounded border-slate-300 w-4 h-4"
+                            checked={selectedIds.includes(project.id)}
+                            onChange={(e) => toggleSelect(e, project.id)}
+                          />
+                        </TableCell>
+                      )}
+                      <TableCell className="font-medium">{project.name}</TableCell>
+                      <TableCell>{project.client_name || project.client || '--'}</TableCell>
+                      <TableCell>{formatCurrency(project.budget)}</TableCell>
+                      <TableCell className="text-green-600 font-medium">{formatCurrency(received - expenses)}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Progress value={progress} className="w-16 h-2" />
+                          <span className="text-xs text-slate-500">{progress}%</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={project.status === 'Active' ? 'success' : 'outline'}>
+                          {project.status || 'Active'}
+                        </Badge>
+                      </TableCell>
+                      {user?.role === 'ADMIN' && (
+                        <TableCell className="text-right" onClick={e => e.stopPropagation()}>
+                          <div className="flex items-center justify-end gap-1">
+                            <button 
+                              onClick={(e) => {
+                                e.preventDefault();
+                                setProjectToEdit(project);
+                                setIsEditModalOpen(true);
+                              }}
+                              className="text-indigo-400 hover:text-indigo-600 hover:scale-110 transition-all p-1"
+                              title="Edit Project"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                            <label 
+                              className="text-slate-400 hover:text-green-600 transition-colors p-1 cursor-pointer"
+                              title="Upload File"
+                            >
+                              <Upload className="w-4 h-4" />
+                              <input type="file" multiple className="hidden" accept=".pdf,image/*" onChange={async (e) => {
+                                if (e.target.files.length > 0) {
+                                  for (let i = 0; i < e.target.files.length; i++) {
+                                    await handleFileUpload(project.id, e.target.files[i]);
+                                  }
+                                }
+                                e.target.value = null;
+                              }} />
+                            </label>
+                            <button 
+                              onClick={(e) => {
+                                e.preventDefault();
+                                setProjectToDelete(project.id);
+                              }}
+                              className="text-rose-400 hover:text-rose-600 hover:scale-110 transition-all p-1"
+                              title="Delete Project"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </TableCell>
+                      )}
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
 
       {totalPages > 0 && (
         <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
@@ -252,6 +322,10 @@ export default function Projects() {
           <div>
             <label className="block text-sm font-medium mb-1">Budget</label>
             <input name="budget" type="number" step="0.01" required className="w-full border rounded-md p-2" placeholder="0.00" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Attach File (PDF/Image)</label>
+            <input name="project_file" type="file" multiple accept=".pdf,image/*" className="w-full border rounded-md p-1.5" />
           </div>
           <div className="flex justify-end gap-2 mt-6">
             <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>Cancel</Button>

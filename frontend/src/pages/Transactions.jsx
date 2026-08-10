@@ -39,7 +39,8 @@ export default function Transactions() {
   const [filterType, setFilterType] = useState('All')
   const [filterProject, setFilterProject] = useState('All')
   const [selectedParty, setSelectedParty] = useState('all')
-  const [filterDate, setFilterDate] = useState('')
+  const [fromDate, setFromDate] = useState('')
+  const [toDate, setToDate] = useState('')
   
   // Bulk Delete
   const [selectedIds, setSelectedIds] = useState([])
@@ -64,7 +65,11 @@ export default function Transactions() {
     return cat ? cat.name : idOrName;
   };
 
-  const actualClients = people.filter(p => p.company || projects.some(proj => proj.client_id === p.id));
+  const actualClients = people.filter(p => {
+    if (!p.company) return false;
+    if (user?.role === 'ADMIN') return true;
+    return projects.some(proj => proj.client_id === p.id);
+  });
   const suppliers = people.filter(p => !p.company && !projects.some(proj => proj.client_id === p.id));
 
   useEffect(() => {
@@ -83,7 +88,9 @@ export default function Transactions() {
     const txProjectName = tx.project_name || tx.project
     const matchesProject = filterProject === 'All' || txProjectName === filterProject
     const matchesParty = selectedParty === 'all' || partyName === selectedParty
-    const matchesDate = filterDate ? (tx.date || '').startsWith(filterDate) : true
+    let matchesDate = true;
+    if (fromDate) matchesDate = matchesDate && new Date(tx.date) >= new Date(fromDate);
+    if (toDate) matchesDate = matchesDate && new Date(tx.date) <= new Date(toDate + 'T23:59:59');
     const typeMatches = filterType === 'All' || tx.type === filterType
     return matchesSearch && matchesProject && matchesParty && matchesDate && typeMatches
   })
@@ -178,7 +185,7 @@ export default function Transactions() {
         </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-4 items-center bg-white p-4 rounded-lg border shadow-sm">
+      <div className="flex flex-col sm:flex-row gap-4 items-center bg-white/80 backdrop-blur-md p-4 rounded-xl border border-indigo-100 shadow-[0_4px_20px_rgb(0,0,0,0.03)]">
         <div className="relative flex-1 w-full">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
           <input 
@@ -190,21 +197,11 @@ export default function Transactions() {
           />
         </div>
         <div className="flex gap-2 w-full sm:w-auto overflow-x-auto">
-          <DateFilter value={filterDate} onChange={setFilterDate} />
-          <select 
-            className="flex h-10 w-40 rounded-md border border-slate-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900"
-            value={filterProject}
-            onChange={(e) => setFilterProject(e.target.value)}
-          >
-            <option value="All">All Projects</option>
-            {projects.map(p => (
-              <option key={p.id} value={p.name}>{p.name}</option>
-            ))}
-          </select>
+          <DateFilter fromDate={fromDate} toDate={toDate} onFromChange={setFromDate} onToChange={setToDate} />
           <select 
             className="flex h-10 w-40 rounded-md border border-slate-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900"
             value={selectedParty}
-            onChange={(e) => setSelectedParty(e.target.value)}
+            onChange={(e) => { setSelectedParty(e.target.value); setFilterProject('All'); }}
           >
             <option value="all">All Parties</option>
             <optgroup label="Clients">
@@ -213,6 +210,20 @@ export default function Transactions() {
             <optgroup label="Subcontractors & Suppliers">
               {suppliers.map(p => <option key={`p-${p.id}`} value={p.name}>{p.name}</option>)}
             </optgroup>
+          </select>
+          <select 
+            className="flex h-10 w-40 rounded-md border border-slate-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900"
+            value={filterProject}
+            onChange={(e) => setFilterProject(e.target.value)}
+          >
+            <option value="All">All Projects</option>
+            {projects.filter(p => {
+              if (selectedParty === 'all') return true;
+              const client = actualClients.find(c => c.name === selectedParty);
+              return client ? p.client_id === client.id : true;
+            }).map(p => (
+              <option key={p.id} value={p.name}>{p.name}</option>
+            ))}
           </select>
         </div>
       </div>
@@ -235,7 +246,7 @@ export default function Transactions() {
           <div className="overflow-x-auto w-full">
             <Table>
               <TableHeader>
-                <TableRow className="bg-slate-50 hover:bg-slate-50">
+                <TableRow className="bg-indigo-50/40 hover:bg-indigo-50/60">
                   {user?.role === 'ADMIN' && (
                     <TableHead className="w-12">
                       <input 
@@ -295,14 +306,14 @@ export default function Transactions() {
                       <TableCell className="flex gap-2">
                         <button 
                           onClick={() => { setTxToEdit(tx); setTxType(tx.type); setTxProject(tx.project_id || txProject); setIsEditModalOpen(true); }} 
-                          className="text-slate-400 hover:text-blue-600 transition-colors" 
+                          className="text-indigo-400 hover:text-indigo-600 hover:scale-110 transition-all" 
                           title="Edit Transaction"
                         >
                           <Edit2 className="w-4 h-4" />
                         </button>
                         <button 
                           onClick={() => setTxToDelete(tx.id)} 
-                          className="text-slate-400 hover:text-red-600 transition-colors" 
+                          className="text-rose-400 hover:text-rose-600 hover:scale-110 transition-all" 
                           title="Delete Transaction"
                         >
                           <Trash2 className="w-4 h-4" />

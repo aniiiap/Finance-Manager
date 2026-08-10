@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import { Badge } from "../components/ui/badge"
 import { Progress } from "../components/ui/progress"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table"
-import { ArrowLeft, Wallet, TrendingUp, CreditCard, Clock, UserCircle2, Building2, Calendar, FileText, IndianRupee, PieChart, Users, BookOpen, Plus, Trash2, Search } from "lucide-react"
+import { ArrowLeft, Wallet, TrendingUp, CreditCard, Clock, UserCircle2, Building2, Calendar, FileText, IndianRupee, PieChart, Users, BookOpen, Plus, Trash2, Search, Folder, Image as ImageIcon, ExternalLink, Download, Upload, Loader2 } from "lucide-react"
 import { Button } from "../components/ui/button"
 import { Modal } from "../components/ui/modal"
 
@@ -27,7 +27,85 @@ export default function ProjectDetail() {
   const [activeTab, setActiveTab] = useState('ledger')
   const [searchQuery, setSearchQuery] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
+  const [projectFiles, setProjectFiles] = useState([])
   const itemsPerPage = 10
+
+  useEffect(() => {
+    if (activeTab === 'files' && project) {
+      fetch(`${import.meta.env.VITE_API_URL}/api/progress/files?project_id=${project.id}`, {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      })
+      .then(res => res.json())
+      .then(data => setProjectFiles(data))
+      .catch(console.error);
+    }
+  }, [activeTab, project?.id]);
+
+  const handleFileUpload = async (file) => {
+    if (!file) return;
+    const fileData = new FormData();
+    fileData.append('file', file);
+    fileData.append('project_id', project.id);
+    fileData.append('upload_date', new Date().toISOString().split('T')[0]);
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/progress/files`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+        body: fileData
+      });
+      if (res.ok) {
+        alert("File uploaded successfully");
+        const newFile = await res.json();
+        setProjectFiles(prev => [...prev, newFile]);
+      } else {
+        alert("File upload failed");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error uploading file");
+    }
+  }
+
+  const handleViewFile = async (id) => {
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/progress/files/${id}/url`, {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      });
+      if (res.ok) {
+        const { url } = await res.json();
+        window.open(url, '_blank');
+      } else {
+        alert('Could not retrieve file link.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error viewing file.');
+    }
+  };
+
+  const handleDownloadFile = async (id, fileName) => {
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/progress/files/${id}/download?filename=${encodeURIComponent(fileName)}`, {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      });
+      if (res.ok) {
+        const blob = await res.blob();
+        const blobUrl = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(blobUrl);
+      } else {
+        alert('Could not retrieve file for download.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error downloading file.');
+    }
+  };
 
   useEffect(() => {
     setCurrentPage(1)
@@ -112,9 +190,18 @@ export default function ProjectDetail() {
       name: formData.get('name'),
       role: formData.get('role'),
       workAssigned: formData.get('workAssigned'),
-      project: project.name
+      project: project?.name
     })
     setIsPersonModalOpen(false)
+  }
+
+  if (!project) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] text-slate-500">
+        <Loader2 className="w-8 h-8 animate-spin mb-4" />
+        <p>Loading project details...</p>
+      </div>
+    );
   }
 
   return (
@@ -198,6 +285,9 @@ export default function ProjectDetail() {
             </button>
             <button onClick={() => setActiveTab('people')} className={`px-4 py-2 text-sm font-medium border-b-2 flex items-center gap-2 ${activeTab === 'people' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>
               <Users className="w-4 h-4" /> People
+            </button>
+            <button onClick={() => setActiveTab('files')} className={`px-4 py-2 text-sm font-medium border-b-2 flex items-center gap-2 ${activeTab === 'files' ? 'border-orange-600 text-orange-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>
+              <Folder className="w-4 h-4" /> Files
             </button>
         </div>
         <div className="pb-2 pr-2 relative">
@@ -411,7 +501,7 @@ export default function ProjectDetail() {
                         <TableCell>{person.workAssigned}</TableCell>
                         <TableCell className="text-right font-semibold">{formatFullCurrency(totalForPerson)}</TableCell>
                         <TableCell>
-                          <button onClick={() => deletePerson(person.id)} className="text-slate-400 hover:text-red-600 transition-colors" title="Delete Person">
+                          <button onClick={() => deletePerson(person.id)} className="text-rose-400 hover:text-rose-600 hover:scale-110 transition-all" title="Delete Person">
                             <Trash2 className="w-4 h-4" />
                           </button>
                         </TableCell>
@@ -421,6 +511,61 @@ export default function ProjectDetail() {
                 </TableBody>
               </Table>
 </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {activeTab === 'files' && (
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle>Project Files</CardTitle>
+              <label className="bg-slate-900 hover:bg-slate-800 text-white flex items-center gap-2 h-9 px-3 rounded-md text-sm font-medium cursor-pointer">
+                <Upload className="w-4 h-4"/> Upload File
+                <input type="file" multiple className="hidden" accept=".pdf,image/*" onChange={async (e) => {
+                  if (e.target.files.length > 0) {
+                    for (let i = 0; i < e.target.files.length; i++) {
+                      await handleFileUpload(e.target.files[i]);
+                    }
+                  }
+                  e.target.value = null;
+                }} />
+              </label>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto w-full">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-12">Type</TableHead>
+                      <TableHead>File Name</TableHead>
+                      <TableHead>Upload Date</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {projectFiles.map(file => (
+                      <TableRow key={file.id}>
+                        <TableCell>
+                          {file.file_name.split('.').pop().toLowerCase() === 'pdf' ? <FileText className="w-5 h-5 text-red-500" /> : <ImageIcon className="w-5 h-5 text-blue-500" />}
+                        </TableCell>
+                        <TableCell className="font-medium truncate max-w-[200px]" title={file.file_name}>{file.file_name}</TableCell>
+                        <TableCell>{file.upload_date ? new Date(file.upload_date).toLocaleDateString() : new Date(file.created_at).toLocaleDateString()}</TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end space-x-2">
+                            <button onClick={() => handleViewFile(file.id)} className="p-2 text-slate-400 hover:text-indigo-600 rounded-md hover:bg-slate-100 transition-colors" title="View File"><ExternalLink className="w-4 h-4" /></button>
+                            <button onClick={() => handleDownloadFile(file.id, file.file_name)} className="p-2 text-slate-400 hover:text-indigo-600 rounded-md hover:bg-slate-100 transition-colors" title="Download File"><Download className="w-4 h-4" /></button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {projectFiles.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center py-8 text-slate-500">No files uploaded yet.</TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
             </CardContent>
           </Card>
         )}

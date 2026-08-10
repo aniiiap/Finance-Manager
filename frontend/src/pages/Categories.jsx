@@ -20,7 +20,8 @@ export default function Categories() {
 
   // Filters & Bulk Delete
   const [searchTerm, setSearchTerm] = useState('')
-  const [filterDate, setFilterDate] = useState(null)
+  const [fromDate, setFromDate] = useState('')
+  const [toDate, setToDate] = useState('')
   const [selectedIds, setSelectedIds] = useState([])
 
   const handleEditSubmit = (e) => {
@@ -68,7 +69,9 @@ export default function Categories() {
 
   const filteredCategories = categories.filter(c => {
     const searchMatch = (c.name || '').toLowerCase().includes(searchTerm.toLowerCase());
-    const dateMatch = filterDate ? (c.created_at || c.updated_at || '').startsWith(filterDate) : true;
+    let dateMatch = true;
+    if (fromDate) dateMatch = dateMatch && new Date(c.created_at || c.updated_at) >= new Date(fromDate);
+    if (toDate) dateMatch = dateMatch && new Date(c.created_at || c.updated_at) <= new Date(toDate + 'T23:59:59');
     return searchMatch && dateMatch;
   });
 
@@ -93,7 +96,7 @@ export default function Categories() {
           <div className="overflow-x-auto w-full">
             <Table>
               <TableHeader>
-                <TableRow className="bg-slate-50">
+                <TableRow className="bg-indigo-50/40">
                   {user?.role === 'ADMIN' && (
                     <TableHead className="w-12">
                       <input 
@@ -128,10 +131,10 @@ export default function Categories() {
                       </TableCell>
                       {user?.role === 'ADMIN' && (
                         <TableCell className="flex gap-2 justify-end">
-                          <button onClick={() => { setCategoryToEdit(parent); setIsEditModalOpen(true); }} className="text-slate-400 hover:text-blue-600 transition-colors" title="Edit Category">
+                          <button onClick={() => { setCategoryToEdit(parent); setIsEditModalOpen(true); }} className="text-indigo-400 hover:text-indigo-600 hover:scale-110 transition-all" title="Edit Category">
                             <Edit2 className="w-4 h-4" />
                           </button>
-                          <button onClick={() => setCategoryToDelete(parent.id)} className="text-slate-400 hover:text-red-600 transition-colors" title="Delete Category">
+                          <button onClick={() => setCategoryToDelete(parent.id)} className="text-rose-400 hover:text-rose-600 hover:scale-110 transition-all" title="Delete Category">
                             <Trash2 className="w-4 h-4" />
                           </button>
                         </TableCell>
@@ -155,10 +158,10 @@ export default function Categories() {
                         </TableCell>
                         {user?.role === 'ADMIN' && (
                           <TableCell className="flex gap-2 justify-end">
-                            <button onClick={() => { setCategoryToEdit(child); setIsEditModalOpen(true); }} className="text-slate-400 hover:text-blue-600 transition-colors" title="Edit Subcategory">
+                            <button onClick={() => { setCategoryToEdit(child); setIsEditModalOpen(true); }} className="text-indigo-400 hover:text-indigo-600 hover:scale-110 transition-all" title="Edit Subcategory">
                               <Edit2 className="w-4 h-4" />
                             </button>
-                            <button onClick={() => setCategoryToDelete(child.id)} className="text-slate-400 hover:text-red-600 transition-colors" title="Delete Subcategory">
+                            <button onClick={() => setCategoryToDelete(child.id)} className="text-rose-400 hover:text-rose-600 hover:scale-110 transition-all" title="Delete Subcategory">
                               <Trash2 className="w-4 h-4" />
                             </button>
                           </TableCell>
@@ -199,7 +202,7 @@ export default function Categories() {
         </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-4 items-center bg-white p-4 rounded-lg border shadow-sm">
+      <div className="flex flex-col sm:flex-row gap-4 items-center bg-white/80 backdrop-blur-md p-4 rounded-xl border border-indigo-100 shadow-[0_4px_20px_rgb(0,0,0,0.03)]">
         <div className="relative flex-1 w-full">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
           <input 
@@ -211,7 +214,7 @@ export default function Categories() {
           />
         </div>
         <div className="flex gap-2 w-full sm:w-auto">
-          <DateFilter value={filterDate} onChange={setFilterDate} />
+          <DateFilter fromDate={fromDate} toDate={toDate} onFromChange={setFromDate} onToChange={setToDate} />
         </div>
       </div>
 

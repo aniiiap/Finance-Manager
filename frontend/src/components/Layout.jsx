@@ -20,7 +20,6 @@ const navigation = [
   { name: 'Ledger', href: '/ledger', icon: BookOpen },
   { name: 'Profit & Loss', href: '/profit-and-loss', icon: TrendingUp },
   { name: 'Categories', href: '/categories', icon: Tags },
-  { name: 'Reports', href: '/reports', icon: BarChart3 },
   { name: 'Letters', href: '/letters', icon: Mail },
   { name: 'Progress Reports', href: '/progress-report', icon: Folder },
 ]
@@ -71,17 +70,17 @@ export default function Layout() {
   });
 
   return (
-    <div className="min-h-screen bg-slate-50 flex">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 flex">
       {/* Mobile Sidebar Overlay */}
       {isSidebarOpen && (
         <div 
-          className="fixed inset-0 z-20 bg-black/50 sm:hidden" 
+          className="fixed inset-0 z-20 bg-slate-900/40 backdrop-blur-sm sm:hidden" 
           onClick={closeSidebar}
         />
       )}
 
       {/* Sidebar */}
-      <aside className={`fixed inset-y-0 left-0 z-30 w-64 bg-white border-r border-slate-200 flex flex-col transform transition-transform duration-200 ease-in-out sm:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      <aside className={`fixed inset-y-0 left-0 z-30 w-64 bg-white/70 backdrop-blur-md border-r border-slate-200/60 flex flex-col transform transition-transform duration-200 ease-in-out sm:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="h-14 sm:h-16 flex items-center px-6 border-b border-slate-200 justify-between">
           <div className="flex items-center">
             <img src="/logo.png" alt="FinManager" className="w-16 h-16 -mr-1 -ml-2" />
@@ -218,7 +217,7 @@ export default function Layout() {
       </aside>
       
       <main className="flex-1 sm:pl-64 flex flex-col w-full">
-        <header className="flex h-14 items-center gap-4 border-b border-slate-200 bg-white px-4 sm:px-6 sticky top-0 z-10">
+        <header className="flex h-14 items-center gap-4 border-b border-slate-200/60 bg-white/70 backdrop-blur-md px-4 sm:px-6 sticky top-0 z-10">
           <button 
             onClick={toggleSidebar} 
             className="sm:hidden text-slate-500 hover:text-slate-700"

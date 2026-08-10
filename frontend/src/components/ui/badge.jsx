@@ -3,14 +3,15 @@ import { cn } from "../../lib/utils"
 
 const Badge = React.forwardRef(({ className, variant = "default", ...props }, ref) => {
   const variants = {
-    default: "bg-slate-900 text-slate-50 hover:bg-slate-900/80",
-    success: "bg-green-100 text-green-800 hover:bg-green-100/80",
-    warning: "bg-yellow-100 text-yellow-800 hover:bg-yellow-100/80",
-    danger: "bg-red-100 text-red-800 hover:bg-red-100/80",
-    outline: "text-slate-950 border border-slate-200",
+    default: "bg-indigo-600 text-white hover:bg-indigo-600/80 border-transparent shadow-sm",
+    secondary: "bg-fuchsia-100 text-fuchsia-800 hover:bg-fuchsia-100/80 border-transparent",
+    success: "bg-emerald-100 text-emerald-800 hover:bg-emerald-100/80 border-transparent shadow-sm",
+    warning: "bg-amber-100 text-amber-800 hover:bg-amber-100/80 border-transparent",
+    danger: "bg-rose-100 text-rose-800 hover:bg-rose-100/80 border-transparent shadow-sm",
+    outline: "text-indigo-950 border border-indigo-200",
   }
   return (
-    <div ref={ref} className={cn("inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2", variants[variant], className)} {...props} />
+    <div ref={ref} className={cn("inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2", variants[variant], className)} {...props} />
   )
 })
 Badge.displayName = "Badge"

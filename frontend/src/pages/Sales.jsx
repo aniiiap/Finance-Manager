@@ -46,7 +46,8 @@ export default function Sales() {
   const [view, setView] = useState("list") // 'list', 'create', 'print'
   const [invoices, setInvoices] = useState([])
   const [searchQuery, setSearchQuery] = useState("")
-  const [filterDate, setFilterDate] = useState("")
+  const [fromDate, setFromDate] = useState('')
+  const [toDate, setToDate] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [currentInvoice, setCurrentInvoice] = useState(null)
   const [companySettings, setCompanySettings] = useState(null)
@@ -78,6 +79,8 @@ export default function Sales() {
   const [items, setItems] = useState([
     { description: "", narration: "", hsn_sac: "", quantity: "", rate: "", per: "PCS", amount: "0", gst_rate: "18" }
   ])
+  
+  const [discount, setDiscount] = useState({ description: "TP Less", narration: "", showNarration: false, gst_rate: "18", amount: "" })
 
   useEffect(() => {
     if (view === "list") fetchInvoices();
@@ -336,15 +339,25 @@ export default function Sales() {
       return
     }
     
-    const payload = { ...formData, items }
-    
+    const payloadItems = [...items]
+    if (parseFloat(discount.amount) > 0) {
+      payloadItems.push({
+         description: discount.description || "TP Less",
+         narration: discount.narration || "",
+         hsn_sac: "",
+         quantity: "1",
+         rate: -parseFloat(discount.amount),
+         per: "PCS",
+         amount: -parseFloat(discount.amount),
+         gst_rate: discount.gst_rate || "0"
+      })
+    }
+
     try {
       const res = await apiFetch('/api/sales/invoices', {
         method: "POST",
-        headers: { 
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(payload)
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...formData, items: payloadItems })
       })
       
       if (res.ok) {
@@ -488,15 +501,24 @@ export default function Sales() {
   }
 
   // Calculate running totals for form view
-  const formTaxable = items.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0)
+  let formTaxable = items.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0)
   let formCgst = 0
   let formSgst = 0
+  
   items.forEach(item => {
     const amt = parseFloat(item.amount) || 0
     const gstRate = parseFloat(item.gst_rate) || 0
     formCgst += amt * (gstRate / 2) / 100
     formSgst += amt * (gstRate / 2) / 100
   })
+
+  if (parseFloat(discount.amount) > 0) {
+    const discAmt = parseFloat(discount.amount)
+    const discGstRate = parseFloat(discount.gst_rate) || 0
+    formTaxable -= discAmt
+    formCgst -= discAmt * (discGstRate / 2) / 100
+    formSgst -= discAmt * (discGstRate / 2) / 100
+  }
   const formRawTotal = formTaxable + formCgst + formSgst
   const formGrandTotal = Math.round(formRawTotal)
   const formRoundOff = (formGrandTotal - formRawTotal).toFixed(2)
@@ -520,7 +542,9 @@ export default function Sales() {
   const filteredInvoices = invoices.filter(inv => {
     const matchesSearch = inv.buyer_name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           inv.invoice_no?.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesDate = filterDate ? inv.date?.startsWith(filterDate) : true
+    let matchesDate = true;
+    if (fromDate) matchesDate = matchesDate && new Date(inv.date) >= new Date(fromDate);
+    if (toDate) matchesDate = matchesDate && new Date(inv.date) <= new Date(toDate + 'T23:59:59');
     return matchesSearch && matchesDate
   })
 
@@ -531,7 +555,7 @@ export default function Sales() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, filterDate]);
+  }, [searchQuery, fromDate, toDate]);
 
   const exportData = filteredInvoices.map((inv, idx) => ({
     "Sr No": idx + 1,
@@ -546,7 +570,7 @@ export default function Sales() {
   // -----------------------------------------------------
   if (view === "list") {
     return (
-      <div className="bg-slate-50 min-h-screen">
+      <div className="w-full">
         <div className="max-w-7xl mx-auto space-y-6">
           <div className="space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -573,7 +597,7 @@ export default function Sales() {
               </div>
             </div>
             
-            <div className="flex flex-col sm:flex-row gap-4 items-center bg-white p-4 rounded-lg border shadow-sm">
+            <div className="flex flex-col sm:flex-row gap-4 items-center bg-white/80 backdrop-blur-md p-4 rounded-xl border border-indigo-100 shadow-[0_4px_20px_rgb(0,0,0,0.03)]">
               <div className="relative flex-1 w-full">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
                 <input 
@@ -585,7 +609,7 @@ export default function Sales() {
                 />
               </div>
               <div className="flex gap-2 w-full sm:w-auto">
-                <DateFilter value={filterDate} onChange={setFilterDate} />
+                <DateFilter fromDate={fromDate} toDate={toDate} onFromChange={setFromDate} onToChange={setToDate} />
               </div>
             </div>
 
@@ -773,20 +797,41 @@ export default function Sales() {
                   ))}
                 </TableBody>
               </Table>
-              <div className="p-4 bg-slate-50 border-t flex justify-end gap-6 text-sm">
-                <div className="space-y-2 text-right">
-                  <div className="text-slate-500">Taxable Amount:</div>
-                  <div className="text-slate-500">CGST Total:</div>
-                  <div className="text-slate-500">SGST Total:</div>
-                  <div className="text-slate-500">Round Off:</div>
-                  <div className="font-bold text-base text-slate-900 mt-2">Grand Total:</div>
+              <div className="p-4 bg-slate-50 border-t flex flex-col md:flex-row justify-between items-start md:items-end gap-6 text-sm">
+                <div className="flex gap-4 items-start bg-white p-3 rounded border w-full md:w-auto shadow-sm">
+                  <div className="flex flex-col gap-1 w-52">
+                    <label className="text-xs font-semibold text-slate-500 uppercase">Discount Note</label>
+                    <input type="text" value={discount.description} onChange={e => setDiscount({...discount, description: e.target.value})} placeholder="e.g. Special Discount" className="w-full h-8 px-2 border rounded text-sm"/>
+                    {discount.showNarration || discount.narration ? (
+                      <textarea value={discount.narration || ''} onChange={(e) => setDiscount({...discount, narration: e.target.value})} autoFocus={!discount.narration && discount.showNarration} className="w-full h-8 min-h-[32px] px-2 py-1.5 border rounded text-sm text-slate-500 focus:min-h-[80px] transition-all resize-none mt-1" placeholder="Narration / Details" />
+                    ) : (
+                      <button type="button" onClick={() => setDiscount({...discount, showNarration: true})} className="text-xs text-blue-500 text-left hover:underline cursor-pointer bg-transparent border-none p-0 mt-1">+ Add Narration / Details</button>
+                    )}
+                  </div>
+                  <div className="flex flex-col gap-1 w-20">
+                    <label className="text-xs font-semibold text-slate-500 uppercase">GST %</label>
+                    <input type="number" step="0.01" value={discount.gst_rate} onChange={e => setDiscount({...discount, gst_rate: e.target.value})} placeholder="18" className="w-full h-8 px-2 border rounded text-sm"/>
+                  </div>
+                  <div className="flex flex-col gap-1 w-28">
+                    <label className="text-xs font-semibold text-slate-500 uppercase">Amount</label>
+                    <input type="number" step="0.01" value={discount.amount} onChange={e => setDiscount({...discount, amount: e.target.value})} placeholder="0.00" className="w-full h-8 px-2 border rounded text-sm"/>
+                  </div>
                 </div>
-                <div className="space-y-2 text-right font-medium">
-                  <div>₹{formTaxable.toFixed(2)}</div>
-                  <div>₹{formCgst.toFixed(2)}</div>
-                  <div>₹{formSgst.toFixed(2)}</div>
-                  <div>₹{formRoundOff}</div>
-                  <div className="font-bold text-base text-slate-900 mt-2">₹{formGrandTotal.toFixed(2)}</div>
+                <div className="flex justify-end gap-6 w-full md:w-auto">
+                  <div className="space-y-2 text-right">
+                    <div className="text-slate-500">Taxable Amount:</div>
+                    <div className="text-slate-500">CGST Total:</div>
+                    <div className="text-slate-500">SGST Total:</div>
+                    <div className="text-slate-500">Round Off:</div>
+                    <div className="font-bold text-base text-slate-900 mt-2">Grand Total:</div>
+                  </div>
+                  <div className="space-y-2 text-right font-medium">
+                    <div>₹{formTaxable.toFixed(2)}</div>
+                    <div>₹{formCgst.toFixed(2)}</div>
+                    <div>₹{formSgst.toFixed(2)}</div>
+                    <div>₹{formRoundOff}</div>
+                    <div className="font-bold text-base text-slate-900 mt-2">₹{formGrandTotal.toFixed(2)}</div>
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -824,7 +869,7 @@ export default function Sales() {
   // -----------------------------------------------------
   if (view === "print" && currentInvoice) {
     return (
-      <div className="bg-white min-h-screen">
+      <div className="w-full">
         <div className="print:hidden p-4 bg-slate-100 flex gap-4 justify-center border-b shadow-sm mb-8">
           <Button variant="outline" onClick={() => setView("list")}><ArrowLeft className="w-4 h-4 mr-2" /> Back</Button>
           <Button onClick={() => window.print()} className="gap-2"><Printer className="w-4 h-4" /> Print Invoice</Button>

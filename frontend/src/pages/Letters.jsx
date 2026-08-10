@@ -56,7 +56,8 @@ export default function Letters() {
 
   // Filters & Bulk Delete
   const [searchQuery, setSearchQuery] = useState('')
-  const [filterDate, setFilterDate] = useState('')
+  const [fromDate, setFromDate] = useState('')
+  const [toDate, setToDate] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [selectedIds, setSelectedIds] = useState([])
 
@@ -73,7 +74,9 @@ export default function Letters() {
   const filteredLetters = (letters || []).filter(l => {
     const searchMatch = (l.ref_no || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
                         (l.content || '').toLowerCase().includes(searchQuery.toLowerCase());
-    const dateMatch = filterDate ? (l.letter_date || '').startsWith(filterDate) : true;
+    let dateMatch = true;
+    if (fromDate) dateMatch = dateMatch && new Date(l.letter_date) >= new Date(fromDate);
+    if (toDate) dateMatch = dateMatch && new Date(l.letter_date) <= new Date(toDate + 'T23:59:59');
     return searchMatch && dateMatch;
   });
 
@@ -84,7 +87,7 @@ export default function Letters() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, filterDate]);
+  }, [searchQuery, fromDate, toDate]);
 
   const toggleSelectAll = (e) => {
     if (e.target.checked) setSelectedIds(paginatedLetters.map(i => i.id));
@@ -217,7 +220,7 @@ export default function Letters() {
         </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-4 items-center bg-white p-4 rounded-lg border shadow-sm">
+      <div className="flex flex-col sm:flex-row gap-4 items-center bg-white/80 backdrop-blur-md p-4 rounded-xl border border-indigo-100 shadow-[0_4px_20px_rgb(0,0,0,0.03)]">
         <div className="relative flex-1 w-full">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
           <input 
@@ -229,7 +232,7 @@ export default function Letters() {
           />
         </div>
         <div className="flex gap-2 w-full sm:w-auto">
-          <DateFilter value={filterDate} onChange={setFilterDate} />
+          <DateFilter fromDate={fromDate} toDate={toDate} onFromChange={setFromDate} onToChange={setToDate} />
         </div>
       </div>
 
@@ -237,7 +240,7 @@ export default function Letters() {
           <CardContent className="p-0">
             <Table>
               <TableHeader>
-                <TableRow className="bg-slate-50">
+                <TableRow className="bg-indigo-50/40">
                   {user?.role === 'ADMIN' && (
                     <TableHead className="w-12">
                       <input 
@@ -284,14 +287,14 @@ export default function Letters() {
                         <>
                           <button 
                             onClick={() => handleEditClick(l)}
-                            className="p-2 text-slate-400 hover:text-blue-600 rounded-md hover:bg-slate-100 transition-colors"
+                            className="p-2 text-indigo-400 hover:text-indigo-600 hover:scale-110 transition-all rounded-md hover:bg-slate-100 transition-colors"
                             title="Edit Letter"
                           >
                             <Edit2 className="w-4 h-4" />
                           </button>
                           <button 
                             onClick={() => setLetterToDelete(l.id)}
-                            className="p-2 text-slate-400 hover:text-red-600 rounded-md hover:bg-slate-100 transition-colors"
+                            className="p-2 text-rose-400 hover:text-rose-600 hover:scale-110 transition-all rounded-md hover:bg-slate-100 transition-colors"
                             title="Delete Letter"
                           >
                             <Trash2 className="w-4 h-4" />

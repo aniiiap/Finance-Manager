@@ -21,7 +21,8 @@ export default function Clients() {
 
   // Filters & Bulk Delete
   const [searchTerm, setSearchTerm] = useState('')
-  const [filterDate, setFilterDate] = useState('')
+  const [fromDate, setFromDate] = useState('')
+  const [toDate, setToDate] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [selectedIds, setSelectedIds] = useState([])
 
@@ -31,7 +32,7 @@ export default function Clients() {
     addClient({
       name: formData.get('name'),
       company: formData.get('company'),
-      contact: formData.get('contact'),
+      budget: formData.get('budget'),
       status: 'Active'
     })
     setIsModalOpen(false)
@@ -43,7 +44,7 @@ export default function Clients() {
     updateClient(clientToEdit.id, {
       name: formData.get('name'),
       company: formData.get('company'),
-      contact: formData.get('contact'),
+      budget: formData.get('budget'),
       status: 'Active'
     })
     setIsEditModalOpen(false)
@@ -55,7 +56,9 @@ export default function Clients() {
     const matchesSearch = (client.name || '').toLowerCase().includes(q) || 
                           (client.company || '').toLowerCase().includes(q) ||
                           (client.phone || '').toLowerCase().includes(q);
-    const matchesDate = filterDate ? (client.created_at || client.updated_at || '').startsWith(filterDate) : true;
+    let matchesDate = true;
+    if (fromDate) matchesDate = matchesDate && new Date(client.created_at || client.updated_at || '') >= new Date(fromDate);
+    if (toDate) matchesDate = matchesDate && new Date(client.created_at || client.updated_at || '') <= new Date(toDate + 'T23:59:59');
     return matchesSearch && matchesDate;
   });
 
@@ -66,7 +69,7 @@ export default function Clients() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, filterDate]);
+  }, [searchTerm, fromDate, toDate]);
 
   const handleBulkDelete = async () => {
     if (!window.confirm(`Are you sure you want to delete ${selectedIds.length} clients?`)) return;
@@ -88,7 +91,7 @@ export default function Clients() {
     return {
       "Name": client.name,
       "Company": client.company || '',
-      "Email": client.email || '',
+      "Budget": client.budget ? parseFloat(client.budget).toFixed(2) : '-',
       "Phone": client.phone || '',
       "Address": client.address || '',
       "Projects": clientProjects.length > 0 ? clientProjects.map(p => p.name).join(", ") : "-"
@@ -105,7 +108,7 @@ export default function Clients() {
         <div className="flex gap-2 w-full sm:w-auto flex-wrap">
           <ExportButtons 
             data={exportData} 
-            columns={["Name", "Company", "Email", "Phone", "Address", "Projects"]}
+            columns={["Name", "Company", "Budget", "Phone", "Address", "Projects"]}
             filename={`Clients_${new Date().toISOString().split('T')[0]}`}
             title="Clients Report"
           />
@@ -123,7 +126,7 @@ export default function Clients() {
         </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-4 items-center bg-white p-4 rounded-lg border shadow-sm">
+      <div className="flex flex-col sm:flex-row gap-4 items-center bg-white/80 backdrop-blur-md p-4 rounded-xl border border-indigo-100 shadow-[0_4px_20px_rgb(0,0,0,0.03)]">
         <div className="relative flex-1 w-full">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
           <input 
@@ -135,7 +138,7 @@ export default function Clients() {
           />
         </div>
         <div className="flex gap-2 w-full sm:w-auto">
-          <DateFilter value={filterDate} onChange={setFilterDate} />
+          <DateFilter fromDate={fromDate} toDate={toDate} onFromChange={setFromDate} onToChange={setToDate} />
         </div>
       </div>
 
@@ -147,7 +150,7 @@ export default function Clients() {
           <div className="overflow-x-auto w-full">
             <Table>
               <TableHeader>
-              <TableRow className="bg-slate-50 hover:bg-slate-50">
+              <TableRow className="bg-indigo-50/40 hover:bg-indigo-50/60">
                 {user?.role === 'ADMIN' && (
                   <TableHead className="w-12">
                     <input 
@@ -161,7 +164,7 @@ export default function Clients() {
                 <TableHead>Client Name</TableHead>
                 <TableHead>Company</TableHead>
                 <TableHead>Projects</TableHead>
-                <TableHead>Contact</TableHead>
+                <TableHead>Budget</TableHead>
                 <TableHead>Status</TableHead>
                 {user?.role === 'ADMIN' && <TableHead className="w-[80px]"></TableHead>}
               </TableRow>
@@ -176,7 +179,7 @@ export default function Clients() {
               ) : paginatedClients.map((client) => {
                 const clientProjectsCount = projects.filter(p => p.client_id === client.id).length;
                 return (
-                <TableRow key={client.id} className={selectedIds.includes(client.id) ? 'bg-red-50/50' : ''}>
+                <TableRow key={client.id} className={selectedIds.includes(client.id) ? 'bg-rose-50/50' : 'hover:bg-indigo-50/20 transition-colors'}>
                   {user?.role === 'ADMIN' && (
                     <TableCell>
                       <input 
@@ -200,18 +203,18 @@ export default function Clients() {
                       '--'
                     )}
                   </TableCell>
-                  <TableCell>{client.phone || '--'}</TableCell>
+                  <TableCell>{client.budget ? parseFloat(client.budget).toFixed(2) : '--'}</TableCell>
                   <TableCell>
                     <Badge variant={client.status === 'Active' ? 'success' : 'outline'}>
                       {client.status || 'Active'}
                     </Badge>
                   </TableCell>
                   {user?.role === 'ADMIN' && (
-                    <TableCell className="flex gap-2">
-                      <button onClick={() => { setClientToEdit(client); setIsEditModalOpen(true); }} className="text-slate-400 hover:text-blue-600 transition-colors" title="Edit Client">
+                    <TableCell className="flex gap-3">
+                      <button onClick={() => { setClientToEdit(client); setIsEditModalOpen(true); }} className="text-indigo-400 hover:text-indigo-600 hover:scale-110 transition-all" title="Edit Client">
                         <Edit2 className="w-4 h-4" />
                       </button>
-                      <button onClick={() => setClientToDelete(client.id)} className="text-slate-400 hover:text-red-600 transition-colors" title="Delete Client">
+                      <button onClick={() => setClientToDelete(client.id)} className="text-rose-400 hover:text-rose-600 hover:scale-110 transition-all" title="Delete Client">
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </TableCell>
@@ -240,8 +243,8 @@ export default function Clients() {
             <input name="company" className="w-full border rounded-md p-2" placeholder="E.g., Acme Corp" />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Contact / Email</label>
-            <input name="contact" className="w-full border rounded-md p-2" placeholder="john@example.com" />
+            <label className="block text-sm font-medium mb-1">Budget</label>
+            <input name="budget" type="number" step="0.01" className="w-full border rounded-md p-2" placeholder="0.00" />
           </div>
           <div className="flex justify-end gap-2 mt-6">
             <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>Cancel</Button>
@@ -266,8 +269,8 @@ export default function Clients() {
               <input name="company" defaultValue={clientToEdit.company} className="w-full border rounded-md p-2" />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">Contact / Email</label>
-              <input name="contact" defaultValue={clientToEdit.phone} className="w-full border rounded-md p-2" />
+              <label className="block text-sm font-medium mb-1">Budget</label>
+              <input name="budget" type="number" step="0.01" defaultValue={clientToEdit.budget} className="w-full border rounded-md p-2" />
             </div>
             <div className="flex justify-end gap-2 mt-6">
               <Button type="button" variant="outline" onClick={() => setIsEditModalOpen(false)}>Cancel</Button>

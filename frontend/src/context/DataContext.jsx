@@ -151,12 +151,15 @@ export const DataProvider = ({ children }) => {
       if (res.ok) {
         fetchData();
         toast("Project created successfully!", "success");
+        return await res.json();
       } else {
         toast("Failed to create project", "error");
+        return null;
       }
     } catch (err) {
       console.error(err);
       toast("Error creating project", "error");
+      return null;
     }
   };
 
@@ -272,7 +275,7 @@ export const DataProvider = ({ children }) => {
       const res = await apiFetch('/api/data/people', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: nameString, phone: clientData.contact })
+        body: JSON.stringify({ name: nameString, budget: clientData.budget })
       });
       if (res.ok) {
         fetchData();
@@ -388,7 +391,7 @@ export const DataProvider = ({ children }) => {
       const res = await apiFetch(`/api/data/people/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: nameString, phone: clientData.contact })
+        body: JSON.stringify({ name: nameString, budget: clientData.budget })
       });
       if (res.ok) {
         fetchData();

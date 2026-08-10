@@ -29,7 +29,12 @@ router.post('/login', async (req, res) => {
     const { email, password } = req.body;
     
     // Check if user exists
-    const userResult = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+    const userResult = await pool.query(`
+      SELECT u.*, c.name as company_name 
+      FROM users u 
+      LEFT JOIN companies c ON u.company_id = c.id 
+      WHERE LOWER(u.email) = LOWER($1) OR LOWER(u.name) = LOWER($1) OR u.phone = $1
+    `, [email]);
     if (userResult.rows.length === 0) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
@@ -62,6 +67,7 @@ router.post('/login', async (req, res) => {
         email: user.email, 
         role: user.role, 
         company_id: user.company_id,
+        company_name: user.company_name,
         access_modules: user.access_modules 
       },
       process.env.JWT_SECRET,
@@ -76,6 +82,7 @@ router.post('/login', async (req, res) => {
         email: user.email, 
         role: user.role, 
         company_id: user.company_id,
+        company_name: user.company_name,
         requires_password_change: user.requires_password_change,
         access_modules: user.access_modules
       } 
@@ -89,7 +96,12 @@ router.post('/login', async (req, res) => {
 // 1.5 Get Current User (Refresh Profile)
 router.get('/me', verifyToken, async (req, res) => {
   try {
-    const userResult = await pool.query('SELECT * FROM users WHERE id = $1', [req.user.id]);
+    const userResult = await pool.query(`
+      SELECT u.*, c.name as company_name 
+      FROM users u 
+      LEFT JOIN companies c ON u.company_id = c.id 
+      WHERE u.id = $1
+    `, [req.user.id]);
     if (userResult.rows.length === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
@@ -101,6 +113,7 @@ router.get('/me', verifyToken, async (req, res) => {
       email: user.email, 
       role: user.role, 
       company_id: user.company_id,
+      company_name: user.company_name,
       requires_password_change: user.requires_password_change,
       access_modules: user.access_modules
     });
@@ -115,8 +128,8 @@ router.post('/set-password', async (req, res) => {
   try {
     const { email, oldPassword, newPassword } = req.body;
 
-    if (!newPassword || String(newPassword).length < 8) {
-      return res.status(400).json({ error: 'New password must be at least 8 characters' });
+    if (!newPassword || String(newPassword).length < 1) {
+      return res.status(400).json({ error: 'New password is required' });
     }
     
     const userResult = await pool.query('SELECT * FROM users WHERE email = $1', [email]);

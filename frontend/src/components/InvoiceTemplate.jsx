@@ -117,7 +117,7 @@ export default function InvoiceTemplate({ invoice, innerRef, className = "" }) {
   return (
     <div
       ref={innerRef}
-      style={{ minHeight: "1056px", width: "760px", fontFamily: "Arial, Helvetica, sans-serif", WebkitTextStroke: "0.1px black" }}
+      style={{ width: "760px", fontFamily: "Arial, Helvetica, sans-serif", WebkitTextStroke: "0.1px black" }}
       className={`invoice-container border-[1.5px] border-black bg-white text-black text-[12px] leading-relaxed font-sans flex flex-col ${className}`}
     >
       <div className="text-center font-bold text-sm border-b-[1.5px] border-black py-1">Tax Invoice</div>
@@ -214,7 +214,7 @@ export default function InvoiceTemplate({ invoice, innerRef, className = "" }) {
 
       {/* Items */}
       <div className="flex-1 flex flex-col">
-        <table className="w-full border-collapse border-b-[1.5px] border-black table-fixed h-full">
+        <table className="w-full border-collapse border-b-[1.5px] border-black table-fixed">
           <thead>
           <tr className="border-b-[1.5px] border-black text-center">
             <th className="border-r-[1.5px] border-black w-8 px-1.5 py-1.5 font-semibold">
@@ -240,7 +240,7 @@ export default function InvoiceTemplate({ invoice, innerRef, className = "" }) {
           </tr>
         </thead>
         <tbody>
-          {items.map((item, idx) => (
+          {items.filter(item => parseFloat(item.amount || 0) >= 0).map((item, idx) => (
             <tr key={idx} className="align-top">
               <td className="border-r-[1.5px] border-black text-center px-1.5 py-1.5 border-b-transparent border-t-transparent">
                 {idx + 1}
@@ -272,16 +272,7 @@ export default function InvoiceTemplate({ invoice, innerRef, className = "" }) {
             </tr>
           ))}
 
-          <tr className="h-full">
-            <td className="border-r-[1.5px] border-black border-b-transparent border-t-transparent" />
-            <td className="border-r-[1.5px] border-black border-b-transparent border-t-transparent" />
-            <td className="border-r-[1.5px] border-black border-b-transparent border-t-transparent" />
-            <td className="border-r-[1.5px] border-black border-b-transparent border-t-transparent" />
-            <td className="border-r-[1.5px] border-black border-b-transparent border-t-transparent" />
-            <td className="border-r-[1.5px] border-black border-b-transparent border-t-transparent" />
-            <td className="border-r-[1.5px] border-black border-b-transparent border-t-transparent" />
-            <td className="border-b-transparent border-t-transparent" />
-          </tr>
+
 
           <tr>
             <td className="border-r-[1.5px] border-black border-t-transparent" />
@@ -292,9 +283,31 @@ export default function InvoiceTemplate({ invoice, innerRef, className = "" }) {
             <td className="border-r-[1.5px] border-black border-t-transparent" />
             <td className="border-r-[1.5px] border-black border-t-transparent" />
             <td className="text-right px-1.5 py-1.5 font-bold border-t-[1.5px] border-black">
-              {fmt(inv.total_taxable_amount)}
+              {fmt(items.filter(item => parseFloat(item.amount || 0) >= 0).reduce((sum, item) => sum + parseFloat(item.amount || 0), 0))}
             </td>
           </tr>
+
+          {items.filter(item => parseFloat(item.amount || 0) < 0).map((discountItem, idx) => (
+            <tr key={`disc-${idx}`}>
+              <td className="border-r-[1.5px] border-black border-t-transparent border-b-transparent" />
+              <td className="border-r-[1.5px] border-black text-right px-1.5 py-1.5 pr-6 italic border-t-transparent border-b-transparent">
+                <div>{discountItem.description || "TP Less"}</div>
+                {discountItem.narration && <div className="text-[10px] text-slate-600 mt-0.5 whitespace-pre-wrap">{discountItem.narration}</div>}
+              </td>
+              <td className="border-r-[1.5px] border-black border-t-transparent border-b-transparent text-center">
+                 {discountItem.hsn_sac || ""}
+              </td>
+              <td className="border-r-[1.5px] border-black border-t-transparent border-b-transparent text-center">
+                 {parseFloat(discountItem.gst_rate) > 0 ? `${parseFloat(discountItem.gst_rate)} %` : ""}
+              </td>
+              <td className="border-r-[1.5px] border-black border-t-transparent border-b-transparent" />
+              <td className="border-r-[1.5px] border-black border-t-transparent border-b-transparent" />
+              <td className="border-r-[1.5px] border-black border-t-transparent border-b-transparent" />
+              <td className="text-right px-1.5 py-1.5 border-t-transparent border-b-transparent text-red-600 font-bold">
+                {fmt(discountItem.amount)}
+              </td>
+            </tr>
+          ))}
 
           {parseFloat(inv.total_cgst) > 0 && (
             <tr>

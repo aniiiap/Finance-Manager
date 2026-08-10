@@ -215,12 +215,12 @@ router.get('/people', verifyToken, requireClient, requireModule('Clients', 'Proj
   }
 });
 
-router.post('/people', verifyToken, requireClient, requireModule('Clients'), async (req, res) => {
+router.post('/people', verifyToken, requireClient, requireModule('Clients', 'Projects', 'Transactions', 'Sales'), async (req, res) => {
   try {
-    const { name, phone, contact, company, status } = req.body;
+    const { name, phone, budget, company, status } = req.body;
     const result = await pool.query(
-      'INSERT INTO people (company_id, name, phone, company, status) VALUES ($1, $2, $3, $4, $5) RETURNING *', 
-      [req.user.company_id, name, phone || contact, company || null, status || 'Active']
+      'INSERT INTO people (company_id, name, phone, budget, company, status) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *', 
+      [req.user.company_id, name, phone || null, budget ? parseFloat(budget) : null, company || null, status || 'Active']
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
@@ -268,9 +268,9 @@ router.post('/users', verifyToken, verifyAdmin, requireClient, async (req, res) 
       await client.query('ROLLBACK');
       return res.status(400).json({ error: 'Invalid role. Allowed: ADMIN, USER' });
     }
-    if (!password || String(password).length < 6) {
+    if (!password || String(password).length < 1) {
       await client.query('ROLLBACK');
-      return res.status(400).json({ error: 'Password must be at least 6 characters' });
+      return res.status(400).json({ error: 'Password is required' });
     }
     
     const salt = await bcrypt.genSalt(12);
@@ -473,8 +473,9 @@ router.put('/projects/:id', verifyToken, verifyAdmin, requireClient, requireModu
 
 router.put('/people/:id', verifyToken, verifyAdmin, requireClient, requireModule('Clients'), async (req, res) => {
   try {
-    const { name, phone } = req.body;
-    await pool.query('UPDATE people SET name=$1, phone=$2 WHERE id=$3 AND company_id=$4', [name, phone, req.params.id, req.user.company_id]);
+    const { name, phone, budget, company, status } = req.body;
+    await pool.query('UPDATE people SET name=$1, phone=$2, budget=$3, company=$4, status=$5, updated_at = CURRENT_TIMESTAMP WHERE id=$6 AND company_id=$7', 
+      [name, phone, budget ? parseFloat(budget) : null, company || null, status || 'Active', req.params.id, req.user.company_id]);
     res.json({success: true});
   } catch(e) { res.status(500).json({error: 'Server error'}); }
 });

@@ -1,7 +1,7 @@
+import { useAuth } from '../context/AuthContext'
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import { Badge } from "../components/ui/badge"
 import { Progress } from "../components/ui/progress"
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 import { formatCurrency, formatFullCurrency } from "../data/mock"
 import { TrendingUp, CreditCard, FolderKanban, IndianRupee, Plus, BookOpen } from "lucide-react"
 import { useData } from "../context/DataContext"
@@ -9,25 +9,8 @@ import { Modal } from "../components/ui/modal"
 import { Button } from "../components/ui/button"
 import React, { useState } from "react"
 
-const monthlyData = [
-  { name: 'May', income: 4000000, expense: 2400000 },
-  { name: 'Jun', income: 3000000, expense: 1398000 },
-  { name: 'Jul', income: 2000000, expense: 9800000 },
-  { name: 'Aug', income: 2780000, expense: 3908000 },
-  { name: 'Sep', income: 1890000, expense: 4800000 },
-  { name: 'Oct', income: 2390000, expense: 3800000 },
-];
-
-const pieData = [
-  { name: 'Labour', value: 400000 },
-  { name: 'Material', value: 3000000 },
-  { name: 'Machinery', value: 300000 },
-  { name: 'Transport', value: 200000 },
-];
-
-const COLORS = ['#0f172a', '#334155', '#64748b', '#94a3b8'];
-
 export default function Dashboard() {
+  const { user } = useAuth()
   const { clients, projects, transactions, people, addTransaction, addClient, addProject, categories, addCategory, companyInfo } = useData()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [txType, setTxType] = useState('Expense')
@@ -54,17 +37,8 @@ export default function Dashboard() {
     return { ...p, received, expenses, progress };
   });
 
-  const activeProjects = projectsWithMetrics.filter(p => p.status === 'Active')
-  const completedProjects = projectsWithMetrics.filter(p => p.status === 'Completed')
   const recentProjects = projectsWithMetrics.slice(0, 3)
   const recentTransactions = transactions.slice(0, 5)
-
-  // Dynamically calculate totals
-  const totalIncome = projectsWithMetrics.reduce((sum, p) => sum + p.received, 0)
-  const totalExpenses = projectsWithMetrics.reduce((sum, p) => sum + p.expenses, 0)
-  const netProfit = totalIncome - totalExpenses
-  const pendingPayments = projectsWithMetrics.reduce((sum, p) => sum + (Number(p.budget) - p.received), 0)
-  const ledgerBalance = totalIncome - totalExpenses; // Cash balance
 
   const handleSubmit = (e) => {
     e.preventDefault()
@@ -83,116 +57,69 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">Dashboard</h2>
-          <p className="text-base text-slate-600 mt-1">
-            {companyInfo ? (
-              <>Welcome back to <span className="font-bold text-slate-900">{companyInfo.company_name}</span>! Managed by <span className="font-bold text-slate-900">{companyInfo.admin_name}</span>.</>
-            ) : "Welcome back! Here's an overview of your business."}
-          </p>
+    <div className="space-y-6 min-h-[calc(100vh-4rem)] -m-4 p-4 md:-m-8 md:p-8 bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-3xl font-extrabold tracking-tight text-slate-800">Dashboard</h2>
+        {user?.role !== 'USER' && (
+          <Button onClick={() => setIsModalOpen(true)} className="gap-2 bg-rose-600 hover:bg-rose-700 text-white shadow-lg hover:shadow-xl transition-all">
+            <Plus className="w-5 h-5" /> Add Transaction
+          </Button>
+        )}
+      </div>
+
+      {companyInfo ? (
+        <div className="bg-gradient-to-br from-rose-500 via-orange-500 to-amber-500 rounded-3xl p-8 md:p-12 text-white shadow-2xl relative overflow-hidden transform transition-all hover:scale-[1.01]">
+          <div className="absolute top-0 right-0 -mt-10 -mr-10 w-72 h-72 bg-white opacity-10 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-0 left-0 -mb-10 -ml-10 w-56 h-56 bg-white opacity-10 rounded-full blur-2xl"></div>
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-white opacity-5 rounded-full blur-3xl pointer-events-none"></div>
+          
+          <div className="relative z-10 flex flex-col md:flex-row items-center gap-8 text-center md:text-left">
+            {companyInfo.logo_url ? (
+              <div className="relative group mix-blend-multiply">
+                <img src={companyInfo.logo_url} alt="Logo" className="relative w-36 h-36 md:w-40 md:h-40 object-contain transform transition duration-500 group-hover:scale-105" />
+              </div>
+            ) : (
+              <div className="w-36 h-36 md:w-40 md:h-40 rounded-3xl border-4 border-white/40 shadow-2xl bg-white/20 backdrop-blur-sm text-white flex items-center justify-center text-7xl font-black">
+                {companyInfo.company_name?.charAt(0) || 'C'}
+              </div>
+            )}
+            <div className="flex-1">
+              <h1 className="text-5xl md:text-6xl font-black tracking-tight mb-4 drop-shadow-md">{companyInfo.company_name}</h1>
+              <div className="inline-block bg-white/20 backdrop-blur-md px-6 py-2 rounded-full border border-white/30">
+                <p className="text-amber-50 text-xl font-medium drop-shadow-sm">Managed by <span className="text-white font-extrabold">{companyInfo.admin_name}</span></p>
+              </div>
+            </div>
+          </div>
         </div>
-        <Button onClick={() => setIsModalOpen(true)} className="gap-2">
-          <Plus className="w-4 h-4" /> Add Transaction
-        </Button>
-      </div>
+      ) : (
+        <div className="bg-gradient-to-r from-rose-500 to-amber-500 rounded-3xl p-10 text-white shadow-2xl relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-10 rounded-full blur-3xl"></div>
+          <h1 className="text-5xl font-black tracking-tight mb-3 relative z-10">Welcome to FinManager</h1>
+          <p className="text-amber-100 text-xl font-medium relative z-10">Here's an overview of your business.</p>
+        </div>
+      )}
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Ledger Balance</CardTitle>
-            <BookOpen className="h-4 w-4 text-slate-500" />
+      {user?.role !== 'USER' && (
+        <div className="mt-10">
+        <Card className="border-none shadow-xl bg-white/80 backdrop-blur-sm hover:shadow-2xl transition-all duration-300 rounded-2xl overflow-hidden">
+          <CardHeader className="bg-slate-50/50 border-b border-slate-100 pb-4">
+            <CardTitle className="text-xl font-bold text-slate-800 flex items-center gap-2">
+              <FolderKanban className="w-5 h-5 text-rose-500" /> Recent Projects
+            </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-slate-900">{formatCurrency(ledgerBalance)}</div>
-            <p className="text-xs text-slate-500">Current cash</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Projects</CardTitle>
-            <FolderKanban className="h-4 w-4 text-slate-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{projects.length}</div>
-            <p className="text-xs text-slate-500">{activeProjects.length} Active, {completedProjects.length} Completed</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Income</CardTitle>
-            <IndianRupee className="h-4 w-4 text-slate-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(totalIncome)}</div>
-            <p className="text-xs text-slate-500">Across all projects</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Net Profit</CardTitle>
-            <TrendingUp className="h-4 w-4 text-slate-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">{formatCurrency(netProfit)}</div>
-            <p className="text-xs text-slate-500">Margin: {totalIncome > 0 ? ((netProfit / totalIncome) * 100).toFixed(1) : 0}%</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pending Payments</CardTitle>
-            <CreditCard className="h-4 w-4 text-slate-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">{formatCurrency(pendingPayments)}</div>
-            <p className="text-xs text-slate-500">To be received</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Recent Projects</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-6">
+          <CardContent className="pt-6">
+            <div className="space-y-8">
               {recentProjects.map(project => (
-                <div key={project.id} className="flex flex-col gap-2">
+                <div key={project.id} className="flex flex-col gap-3">
                   <div className="flex justify-between items-center">
-                    <div className="font-medium text-sm">{project.name}</div>
-                    <div className="text-sm font-semibold text-green-600">Profit {formatCurrency(project.received - project.expenses)}</div>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <Progress value={project.progress} className="h-2 flex-1" />
-                    <span className="text-xs text-slate-500 w-8">{project.progress}%</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle>Recent Transactions</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-6">
-              {recentTransactions.map(tx => (
-                <div key={tx.id} className="flex justify-between items-center">
-                  <div className="flex items-center gap-4">
-                    <div className={`h-8 w-8 rounded-full flex items-center justify-center ${tx.type === 'Income' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
-                      {tx.type === 'Income' ? '+' : '-'}
-                    </div>
-                    <div>
-                      <div className="text-sm font-medium">{tx.party}</div>
-                      <div className="text-xs text-slate-500">{tx.category}</div>
+                    <div className="font-bold text-slate-700 text-base">{project.name}</div>
+                    <div className="text-base font-black text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full">
+                      Profit {formatCurrency(project.received - project.expenses)}
                     </div>
                   </div>
-                  <div className={`text-sm font-semibold ${tx.type === 'Income' ? 'text-green-600' : 'text-slate-900'}`}>
-                    {tx.type === 'Income' ? '+' : '-'} {formatFullCurrency(tx.amount)}
+                  <div className="flex items-center gap-4">
+                    <Progress value={project.progress} className="h-3 flex-1 bg-slate-100" indicatorClassName="bg-gradient-to-r from-amber-400 to-rose-500" />
+                    <span className="text-sm font-bold text-slate-600 w-10 text-right">{project.progress}%</span>
                   </div>
                 </div>
               ))}
@@ -200,8 +127,7 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       </div>
-
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Add Transaction">
+      )}      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Add Transaction">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">

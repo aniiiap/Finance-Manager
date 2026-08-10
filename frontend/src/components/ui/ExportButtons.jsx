@@ -6,13 +6,14 @@ import { useData } from "../../context/DataContext";
 export function ExportButtons({ data, columns, filename, title = "", hidePdf = false, hideExcel = false }) {
   const { companyInfo } = useData();
   const companyName = companyInfo?.company_name || '';
+  const companyLogo = companyInfo?.logo_url || '';
 
   const handleExcel = () => {
     exportToExcel(data, filename, companyName);
   };
 
-  const handlePdf = () => {
-    exportToPdf(data, columns, filename, title || filename, companyName);
+  const handlePdf = async () => {
+    await exportToPdf(data, columns, filename, title || filename, companyName, companyLogo);
   };
 
   return (

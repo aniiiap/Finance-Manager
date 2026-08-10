@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react"
 import { useData } from "../context/DataContext"
+import { useAuth } from "../context/AuthContext"
 import { formatCurrency, formatFullCurrency } from "../data/mock"
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table"
@@ -10,12 +11,14 @@ import { DateFilter } from "../components/ui/DateFilter"
 import { ExportButtons } from "../components/ui/ExportButtons"
 
 export default function Ledger() {
+  const { user } = useAuth()
   const { projects, transactions, people, clients, categories } = useData()
   const [selectedProject, setSelectedProject] = useState("all")
   const [selectedParty, setSelectedParty] = useState("all")
   const [selectedClient, setSelectedClient] = useState("all")
   const [searchQuery, setSearchQuery] = useState('')
-  const [filterDate, setFilterDate] = useState('')
+  const [fromDate, setFromDate] = useState('')
+  const [toDate, setToDate] = useState('')
 
   const getPartyName = (idOrName) => {
     if (!idOrName) return '';
@@ -31,7 +34,13 @@ export default function Ledger() {
     return cat ? cat.name : idOrName;
   };
 
-  const actualClients = people.filter(p => p.company || projects.some(proj => proj.client_id === p.id));
+  const actualClients = people.filter(p => {
+    const hasProject = projects.some(proj => proj.client_id === p.id || proj.client === p.name);
+    if (user && user.role === 'USER') {
+      return hasProject;
+    }
+    return p.company || hasProject;
+  });
   const suppliers = people.filter(p => !p.company && !projects.some(proj => proj.client_id === p.id));
 
   // Pagination
@@ -59,9 +68,12 @@ export default function Ledger() {
   if (selectedParty !== "all") {
     projectTransactions = projectTransactions.filter(t => getPartyName(t.party_id || t.party) === selectedParty)
   }
-  if (filterDate) {
-    projectTransactions = projectTransactions.filter(t => (t.date || '').startsWith(filterDate))
-  }
+  if (fromDate) {
+      projectTransactions = projectTransactions.filter(t => new Date(t.date) >= new Date(fromDate))
+    }
+    if (toDate) {
+      projectTransactions = projectTransactions.filter(t => new Date(t.date) <= new Date(toDate + 'T23:59:59'))
+    }
   if (searchQuery.trim() !== '') {
     const q = searchQuery.toLowerCase()
     projectTransactions = projectTransactions.filter(tx => 
@@ -105,7 +117,17 @@ export default function Ledger() {
           <h2 className="text-2xl font-bold tracking-tight">Master Ledger</h2>
           <p className="text-sm text-slate-500">Chronological statement of credits and debits.</p>
         </div>
-        <div className="flex gap-2 w-full lg:w-auto mt-4 lg:mt-0 flex-wrap">
+        <div className="flex gap-4 w-full lg:w-auto mt-4 lg:mt-0 flex-wrap items-center">
+          <div className="relative w-full lg:w-64">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-500" />
+            <input 
+              type="text"
+              placeholder="Search any field..."
+              className="flex h-10 w-full rounded-md border border-slate-200 bg-white pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
           <ExportButtons 
             data={exportData} 
             columns={["Date", "Project", "Party", "Narration", "Category", "Method", "Credit", "Debit", "Balance"]}
@@ -115,22 +137,20 @@ export default function Ledger() {
         </div>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end w-full mt-4 md:mt-0">
-        <div className="relative w-full">
-            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1 block">Search</label>
-            <div className="relative">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-500" />
-              <input 
-                type="text"
-                placeholder="Search any field..."
-                className="flex h-10 w-full rounded-md border border-slate-200 bg-white pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
+          <div className="w-full lg:col-span-2">
+            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1 block">Date</label>
+            <DateFilter fromDate={fromDate} toDate={toDate} onFromChange={setFromDate} onToChange={setToDate} className="bg-white h-10 w-full" />
           </div>
           <div className="w-full">
-            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1 block">Date</label>
-            <DateFilter value={filterDate} onChange={setFilterDate} className="bg-white h-10" />
+            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1 block">Filter by Client</label>
+            <select 
+              className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900"
+              value={selectedClient} 
+              onChange={(e) => setSelectedClient(e.target.value)}
+            >
+              <option value="all">All Clients</option>
+              {actualClients.map(c => <option key={`c-${c.id}`} value={c.name}>{c.name}</option>)}
+            </select>
           </div>
           <div className="w-full">
             <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1 block">Filter by Project</label>
@@ -143,17 +163,6 @@ export default function Ledger() {
               {projects.map(p => (
                 <option key={p.id} value={p.name}>{p.name}</option>
               ))}
-            </select>
-          </div>
-          <div className="w-full">
-            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1 block">Filter by Client</label>
-            <select 
-              className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900"
-              value={selectedClient} 
-              onChange={(e) => setSelectedClient(e.target.value)}
-            >
-              <option value="all">All Clients</option>
-              {actualClients.map(c => <option key={`c-${c.id}`} value={c.name}>{c.name}</option>)}
             </select>
           </div>
           <div className="w-full">
