@@ -57,21 +57,15 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="space-y-6 min-h-[calc(100vh-4rem)] -m-4 p-4 md:-m-8 md:p-8 bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50">
+    <div className="space-y-6 min-h-[calc(100vh-4rem)] -m-4 p-4 md:-m-8 md:p-8 bg-gradient-to-br from-blue-50 via-indigo-50 to-yellow-50 flex flex-col">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-3xl font-extrabold tracking-tight text-slate-800">Dashboard</h2>
-        {user?.role !== 'USER' && (
-          <Button onClick={() => setIsModalOpen(true)} className="gap-2 bg-rose-600 hover:bg-rose-700 text-white shadow-lg hover:shadow-xl transition-all">
-            <Plus className="w-5 h-5" /> Add Transaction
-          </Button>
-        )}
       </div>
 
       {companyInfo ? (
-        <div className="bg-gradient-to-br from-rose-500 via-orange-500 to-amber-500 rounded-3xl p-8 md:p-12 text-white shadow-2xl relative overflow-hidden transform transition-all hover:scale-[1.01]">
-          <div className="absolute top-0 right-0 -mt-10 -mr-10 w-72 h-72 bg-white opacity-10 rounded-full blur-3xl"></div>
-          <div className="absolute bottom-0 left-0 -mb-10 -ml-10 w-56 h-56 bg-white opacity-10 rounded-full blur-2xl"></div>
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-white opacity-5 rounded-full blur-3xl pointer-events-none"></div>
+        <div className="flex-1 bg-gradient-to-br from-blue-600 via-blue-500 to-yellow-500 rounded-3xl p-8 md:p-24 shadow-2xl border border-blue-400 relative overflow-hidden transform transition-all hover:scale-[1.01] flex items-center justify-center">
+          <div className="absolute top-0 right-0 -mt-10 -mr-10 w-72 h-72 bg-white opacity-20 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-0 left-0 -mb-10 -ml-10 w-56 h-56 bg-yellow-200 opacity-30 rounded-full blur-2xl"></div>
           
           <div className="relative z-10 flex flex-col md:flex-row items-center gap-8 text-center md:text-left">
             {companyInfo.logo_url ? (
@@ -84,50 +78,22 @@ export default function Dashboard() {
               </div>
             )}
             <div className="flex-1">
-              <h1 className="text-5xl md:text-6xl font-black tracking-tight mb-4 drop-shadow-md">{companyInfo.company_name}</h1>
-              <div className="inline-block bg-white/20 backdrop-blur-md px-6 py-2 rounded-full border border-white/30">
-                <p className="text-amber-50 text-xl font-medium drop-shadow-sm">Managed by <span className="text-white font-extrabold">{companyInfo.admin_name}</span></p>
+              <h1 className="text-5xl md:text-7xl font-black tracking-tight mb-6 text-white drop-shadow-md">{companyInfo.company_name}</h1>
+              <div className="inline-block bg-white/20 backdrop-blur-md px-6 py-2 rounded-full border border-white/30 shadow-sm">
+                <p className="text-blue-50 text-xl font-medium">Managed by <span className="text-white font-extrabold">{companyInfo.admin_name}</span></p>
               </div>
             </div>
           </div>
         </div>
       ) : (
-        <div className="bg-gradient-to-r from-rose-500 to-amber-500 rounded-3xl p-10 text-white shadow-2xl relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-10 rounded-full blur-3xl"></div>
-          <h1 className="text-5xl font-black tracking-tight mb-3 relative z-10">Welcome to FinManager</h1>
-          <p className="text-amber-100 text-xl font-medium relative z-10">Here's an overview of your business.</p>
+        <div className="flex-1 bg-gradient-to-r from-blue-600 via-blue-500 to-yellow-500 rounded-3xl p-10 shadow-2xl relative overflow-hidden flex flex-col justify-center items-center text-center">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-20 rounded-full blur-3xl"></div>
+          <h1 className="text-5xl md:text-7xl font-black tracking-tight mb-3 relative z-10 text-white">Welcome to FinManager</h1>
+          <p className="text-blue-100 text-xl font-medium relative z-10">Here's an overview of your business.</p>
         </div>
       )}
 
-      {user?.role !== 'USER' && (
-        <div className="mt-10">
-        <Card className="border-none shadow-xl bg-white/80 backdrop-blur-sm hover:shadow-2xl transition-all duration-300 rounded-2xl overflow-hidden">
-          <CardHeader className="bg-slate-50/50 border-b border-slate-100 pb-4">
-            <CardTitle className="text-xl font-bold text-slate-800 flex items-center gap-2">
-              <FolderKanban className="w-5 h-5 text-rose-500" /> Recent Projects
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-6">
-            <div className="space-y-8">
-              {recentProjects.map(project => (
-                <div key={project.id} className="flex flex-col gap-3">
-                  <div className="flex justify-between items-center">
-                    <div className="font-bold text-slate-700 text-base">{project.name}</div>
-                    <div className="text-base font-black text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full">
-                      Profit {formatCurrency(project.received - project.expenses)}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <Progress value={project.progress} className="h-3 flex-1 bg-slate-100" indicatorClassName="bg-gradient-to-r from-amber-400 to-rose-500" />
-                    <span className="text-sm font-bold text-slate-600 w-10 text-right">{project.progress}%</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-      )}      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Add Transaction">
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Add Transaction">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">

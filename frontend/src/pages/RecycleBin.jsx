@@ -74,7 +74,8 @@ export default function RecycleBin() {
       if (res.ok) {
         setDeletedItems(prev => prev.filter(item => item.id !== id));
       } else {
-        alert('Failed to permanently delete item.');
+        const data = await res.json().catch(() => ({}));
+        alert(data.error || 'Failed to permanently delete item.');
       }
     } catch (err) {
       console.error(err);
@@ -110,8 +111,14 @@ export default function RecycleBin() {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       }));
-      await Promise.all(promises);
-      setDeletedItems(prev => prev.filter(item => item._type !== type));
+      const results = await Promise.all(promises);
+      const failed = results.find(r => !r.ok);
+      if (failed) {
+        const data = await failed.json().catch(() => ({}));
+        alert(data.error || 'Some items could not be deleted because they are referenced by other records.');
+      } else {
+        setDeletedItems(prev => prev.filter(item => item._type !== type));
+      }
     } catch (err) {
       console.error(err);
       alert('Error deleting items.');

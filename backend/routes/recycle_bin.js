@@ -74,6 +74,9 @@ router.delete('/permanent/:type/:id', verifyToken, verifyAdmin, async (req, res)
     res.json({ message: 'Item permanently deleted' });
   } catch (error) {
     console.error('Recycle Bin PERMANENT DELETE error:', error);
+    if (error.code === '23503') {
+      return res.status(400).json({ error: 'Cannot permanently delete this item because it is referenced by other records (e.g., projects, transactions, or files). Please delete those associated records first.' });
+    }
     res.status(500).json({ error: 'Failed to permanently delete item' });
   }
 });

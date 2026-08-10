@@ -28,6 +28,7 @@ export default function ProjectDetail() {
   const [searchQuery, setSearchQuery] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [projectFiles, setProjectFiles] = useState([])
+  const [selectedFileIds, setSelectedFileIds] = useState([])
   const itemsPerPage = 10
 
   useEffect(() => {
@@ -79,7 +80,7 @@ export default function ProjectDetail() {
       }
     } catch (err) {
       console.error(err);
-      alert('Error viewing file.');
+        alert('Error viewing file.');
     }
   };
 
@@ -99,11 +100,52 @@ export default function ProjectDetail() {
         a.remove();
         window.URL.revokeObjectURL(blobUrl);
       } else {
-        alert('Could not retrieve file for download.');
+        alert('Could not download file.');
       }
     } catch (err) {
       console.error(err);
       alert('Error downloading file.');
+    }
+  };
+
+  const handleDeleteFile = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this file?")) return;
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/progress/files/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      });
+      if (res.ok) {
+        setProjectFiles(prev => prev.filter(f => f.id !== id));
+        setSelectedFileIds(prev => prev.filter(selectedId => selectedId !== id));
+      } else {
+        alert('Failed to delete file');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error deleting file');
+    }
+  };
+
+  const handleDeleteSelectedFiles = async () => {
+    if (selectedFileIds.length === 0) return;
+    if (!window.confirm(`Are you sure you want to delete ${selectedFileIds.length} selected files?`)) return;
+    try {
+      const promises = selectedFileIds.map(id => fetch(`${import.meta.env.VITE_API_URL}/api/progress/files/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      }));
+      const results = await Promise.all(promises);
+      const failed = results.filter(r => !r.ok);
+      if (failed.length === 0) {
+        setProjectFiles(prev => prev.filter(f => !selectedFileIds.includes(f.id)));
+        setSelectedFileIds([]);
+      } else {
+        alert(`${failed.length} files could not be deleted.`);
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error deleting files');
     }
   };
 
@@ -519,23 +561,41 @@ export default function ProjectDetail() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Project Files</CardTitle>
-              <label className="bg-slate-900 hover:bg-slate-800 text-white flex items-center gap-2 h-9 px-3 rounded-md text-sm font-medium cursor-pointer">
-                <Upload className="w-4 h-4"/> Upload File
-                <input type="file" multiple className="hidden" accept=".pdf,image/*" onChange={async (e) => {
-                  if (e.target.files.length > 0) {
-                    for (let i = 0; i < e.target.files.length; i++) {
-                      await handleFileUpload(e.target.files[i]);
+              <div className="flex gap-2">
+                {selectedFileIds.length > 0 && (
+                  <Button variant="danger" className="h-9 px-3 bg-rose-600 hover:bg-rose-700 text-white" onClick={handleDeleteSelectedFiles}>
+                    <Trash2 className="w-4 h-4 mr-2" /> Delete Selected
+                  </Button>
+                )}
+                <label className="bg-slate-900 hover:bg-slate-800 text-white flex items-center gap-2 h-9 px-3 rounded-md text-sm font-medium cursor-pointer">
+                  <Upload className="w-4 h-4"/> Upload File
+                  <input type="file" multiple className="hidden" accept=".pdf,image/*" onChange={async (e) => {
+                    if (e.target.files.length > 0) {
+                      for (let i = 0; i < e.target.files.length; i++) {
+                        await handleFileUpload(e.target.files[i]);
+                      }
                     }
-                  }
-                  e.target.value = null;
-                }} />
-              </label>
+                    e.target.value = null;
+                  }} />
+                </label>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="overflow-x-auto w-full">
                 <Table>
                   <TableHeader>
-                    <TableRow>
+                    <TableRow className="bg-indigo-50/40">
+                      <TableHead className="w-12">
+                        <input 
+                          type="checkbox" 
+                          className="rounded border-slate-300 w-4 h-4 cursor-pointer" 
+                          checked={projectFiles.length > 0 && selectedFileIds.length === projectFiles.length}
+                          onChange={(e) => {
+                            if (e.target.checked) setSelectedFileIds(projectFiles.map(f => f.id));
+                            else setSelectedFileIds([]);
+                          }}
+                        />
+                      </TableHead>
                       <TableHead className="w-12">Type</TableHead>
                       <TableHead>File Name</TableHead>
                       <TableHead>Upload Date</TableHead>
@@ -544,7 +604,18 @@ export default function ProjectDetail() {
                   </TableHeader>
                   <TableBody>
                     {projectFiles.map(file => (
-                      <TableRow key={file.id}>
+                      <TableRow key={file.id} className={selectedFileIds.includes(file.id) ? 'bg-rose-50/50' : 'hover:bg-indigo-50/20'}>
+                        <TableCell>
+                          <input 
+                            type="checkbox" 
+                            className="rounded border-slate-300 w-4 h-4 cursor-pointer" 
+                            checked={selectedFileIds.includes(file.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) setSelectedFileIds(prev => [...prev, file.id]);
+                              else setSelectedFileIds(prev => prev.filter(id => id !== file.id));
+                            }}
+                          />
+                        </TableCell>
                         <TableCell>
                           {file.file_name.split('.').pop().toLowerCase() === 'pdf' ? <FileText className="w-5 h-5 text-red-500" /> : <ImageIcon className="w-5 h-5 text-blue-500" />}
                         </TableCell>
@@ -552,15 +623,16 @@ export default function ProjectDetail() {
                         <TableCell>{file.upload_date ? new Date(file.upload_date).toLocaleDateString() : new Date(file.created_at).toLocaleDateString()}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end space-x-2">
-                            <button onClick={() => handleViewFile(file.id)} className="p-2 text-slate-400 hover:text-indigo-600 rounded-md hover:bg-slate-100 transition-colors" title="View File"><ExternalLink className="w-4 h-4" /></button>
-                            <button onClick={() => handleDownloadFile(file.id, file.file_name)} className="p-2 text-slate-400 hover:text-indigo-600 rounded-md hover:bg-slate-100 transition-colors" title="Download File"><Download className="w-4 h-4" /></button>
+                            <button onClick={() => handleViewFile(file.id)} className="p-2 text-indigo-400 hover:text-indigo-600 rounded-md hover:bg-slate-100 transition-colors" title="View File"><ExternalLink className="w-4 h-4" /></button>
+                            <button onClick={() => handleDownloadFile(file.id, file.file_name)} className="p-2 text-indigo-400 hover:text-indigo-600 rounded-md hover:bg-slate-100 transition-colors" title="Download File"><Download className="w-4 h-4" /></button>
+                            <button onClick={() => handleDeleteFile(file.id)} className="p-2 text-rose-400 hover:text-rose-600 rounded-md hover:bg-slate-100 transition-colors" title="Delete File"><Trash2 className="w-4 h-4" /></button>
                           </div>
                         </TableCell>
                       </TableRow>
                     ))}
                     {projectFiles.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={4} className="text-center py-8 text-slate-500">No files uploaded yet.</TableCell>
+                        <TableCell colSpan={5} className="text-center py-8 text-slate-500">No files uploaded yet.</TableCell>
                       </TableRow>
                     )}
                   </TableBody>
