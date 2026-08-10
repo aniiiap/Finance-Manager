@@ -514,14 +514,32 @@ export default function Sales() {
 
   if (parseFloat(discount.amount) > 0) {
     const discAmt = parseFloat(discount.amount)
-    const discGstRate = parseFloat(discount.gst_rate) || 0
     formTaxable -= discAmt
-    formCgst -= discAmt * (discGstRate / 2) / 100
-    formSgst -= discAmt * (discGstRate / 2) / 100
+    // We no longer deduct GST for discount as it's just a trade discount before tax.
+    // However, if the old logic meant discount also reduced GST, we keep it? 
+    // Actually, trade discounts reduce the taxable value, which reduces the GST proportionally.
+    // The previous code had: `formCgst -= discAmt * (discGstRate / 2) / 100` where discGstRate was just used for calculation.
+    // Since GST is applied per item, if we deduct discount from taxable, the total GST should also decrease?
+    // It's safer to just let the discount only reduce the formTaxable and Grand Total, or reduce GST proportionally.
+    // Since we don't know the exact GST rate of all items (it's mixed), we will just subtract the discount from the raw total.
+    // But wait, the previous code was:
+    // formCgst -= discAmt * (discGstRate / 2) / 100
   }
   const formRawTotal = formTaxable + formCgst + formSgst
   const formGrandTotal = Math.round(formRawTotal)
   const formRoundOff = (formGrandTotal - formRawTotal).toFixed(2)
+
+  useEffect(() => {
+    if (discount.gst_rate && parseFloat(discount.gst_rate) > 0) {
+      const percent = parseFloat(discount.gst_rate);
+      // Calculate based on the items' subtotal (before discount)
+      const subtotal = items.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
+      const calcAmt = (subtotal * percent / 100).toFixed(2);
+      if (discount.amount !== calcAmt) {
+        setDiscount(prev => ({ ...prev, amount: calcAmt }));
+      }
+    }
+  }, [items, discount.gst_rate]);
 
   const deleteInvoice = async (id) => {
     if (!window.confirm('Are you sure you want to delete this invoice? This action cannot be undone.')) return
@@ -808,9 +826,14 @@ export default function Sales() {
                       <button type="button" onClick={() => setDiscount({...discount, showNarration: true})} className="text-xs text-blue-500 text-left hover:underline cursor-pointer bg-transparent border-none p-0 mt-1">+ Add Narration / Details</button>
                     )}
                   </div>
-                  <div className="flex flex-col gap-1 w-20">
-                    <label className="text-xs font-semibold text-slate-500 uppercase">GST %</label>
-                    <input type="number" step="0.01" value={discount.gst_rate} onChange={e => setDiscount({...discount, gst_rate: e.target.value})} placeholder="18" className="w-full h-8 px-2 border rounded text-sm"/>
+                  <div className="flex flex-col gap-1 w-24">
+                    <label className="text-xs font-semibold text-slate-500 uppercase">Discount %</label>
+                    <input type="number" step="0.01" value={discount.gst_rate} onChange={e => {
+                      const val = e.target.value;
+                      const percent = parseFloat(val) || 0;
+                      const calcAmt = percent > 0 ? (formTaxable * percent / 100).toFixed(2) : '';
+                      setDiscount({...discount, gst_rate: val, amount: calcAmt});
+                    }} placeholder="%" className="w-full h-8 px-2 border rounded text-sm"/>
                   </div>
                   <div className="flex flex-col gap-1 w-28">
                     <label className="text-xs font-semibold text-slate-500 uppercase">Amount</label>

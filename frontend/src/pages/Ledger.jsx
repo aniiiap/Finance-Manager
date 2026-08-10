@@ -160,8 +160,10 @@ export default function Ledger() {
               onChange={(e) => setSelectedProject(e.target.value)}
             >
               <option value="all">Entire Company (All Projects)</option>
-              {projects.map(p => (
-                <option key={p.id} value={p.name}>{p.name}</option>
+              {projects
+                .filter(p => selectedClient === "all" || p.client === selectedClient)
+                .map(p => (
+                  <option key={p.id} value={p.name}>{p.name}</option>
               ))}
             </select>
           </div>
