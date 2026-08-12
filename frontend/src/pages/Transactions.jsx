@@ -149,16 +149,31 @@ export default function Transactions() {
     setTxToEdit(null)
   }
 
-  const exportData = filteredTransactions.map(tx => ({
-    "Date": new Date(tx.date).toLocaleDateString(),
-    "Project": tx.project_name || tx.project,
-    "Type": tx.type,
-    "Party": tx.party_name || getPartyName(tx.party_id || tx.party),
-    "Category": getCategoryName(tx.category_id || tx.category),
-    "Method": tx.paymentMethod || tx.payment_method || '',
-    "Amount": tx.amount,
-    "Narration": tx.description || tx.narration || ''
-  }))
+  const totalDebit = filteredTransactions.reduce((sum, tx) => sum + (tx.type === 'Expense' ? Number(tx.amount) : 0), 0);
+  const totalCredit = filteredTransactions.reduce((sum, tx) => sum + (tx.type === 'Income' ? Number(tx.amount) : 0), 0);
+
+  const exportData = [
+    ...filteredTransactions.map(tx => ({
+      "Date": new Date(tx.date).toLocaleDateString(),
+      "Project": tx.project_name || tx.project,
+      "Party": tx.party_name || getPartyName(tx.party_id || tx.party),
+      "Narration": tx.description || tx.narration || '',
+      "Category": getCategoryName(tx.category_id || tx.category),
+      "Method": tx.paymentMethod || tx.payment_method || '',
+      "Debit": tx.type === 'Expense' ? tx.amount : '',
+      "Credit": tx.type === 'Income' ? tx.amount : ''
+    })),
+    {
+      "Date": "TOTAL",
+      "Project": "",
+      "Party": "",
+      "Narration": "",
+      "Category": "",
+      "Method": "",
+      "Debit": totalDebit,
+      "Credit": totalCredit
+    }
+  ]
 
   return (
     <div className="space-y-6">
@@ -170,7 +185,7 @@ export default function Transactions() {
         <div className="flex gap-2 w-full sm:w-auto flex-wrap">
           <ExportButtons 
             data={exportData} 
-            columns={["Date", "Project", "Type", "Party", "Category", "Method", "Amount", "Narration"]}
+            columns={["Date", "Project", "Party", "Narration", "Category", "Method", "Debit", "Credit"]}
             filename={`Transactions_${new Date().toISOString().split('T')[0]}`}
             title="Transactions Report"
           />
@@ -259,11 +274,12 @@ export default function Transactions() {
                   )}
                   <TableHead>Date</TableHead>
                   <TableHead>Project</TableHead>
-                  <TableHead>Type</TableHead>
                   <TableHead>Party</TableHead>
+                  <TableHead>Narration</TableHead>
                   <TableHead>Category</TableHead>
                   <TableHead>Method</TableHead>
-                  <TableHead className="text-right">Amount</TableHead>
+                  <TableHead className="text-right">Debit</TableHead>
+                  <TableHead className="text-right">Credit</TableHead>
                   {user?.role === 'ADMIN' && <TableHead className="w-16"></TableHead>}
                 </TableRow>
               </TableHeader>
@@ -281,10 +297,7 @@ export default function Transactions() {
                       </TableCell>
                     )}
                     <TableCell className="whitespace-nowrap">{new Date(tx.date).toLocaleDateString()}</TableCell>
-                    <TableCell className="font-medium max-w-[200px] truncate">{tx.project_name || tx.project}</TableCell>
-                    <TableCell>
-                      <Badge variant={tx.type === 'Income' ? 'success' : 'danger'}>{tx.type}</Badge>
-                    </TableCell>
+                    <TableCell className="font-medium max-w-[150px] truncate">{tx.project_name || tx.project}</TableCell>
                     <TableCell>
                       <div 
                         className="font-medium text-indigo-600 hover:underline cursor-pointer"
@@ -293,14 +306,23 @@ export default function Transactions() {
                       >
                         {tx.party_name || getPartyName(tx.party_id || tx.party)}
                       </div>
-                      {tx.description && <div className="text-xs text-slate-500 mt-1 line-clamp-1">{tx.description}</div>}
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm text-slate-700 max-w-[150px] truncate" title={tx.description || tx.narration}>
+                        {tx.description || tx.narration || '--'}
+                      </div>
                     </TableCell>
                     <TableCell>{getCategoryName(tx.category_id || tx.category)}</TableCell>
                     <TableCell className="text-slate-500 text-sm">{tx.paymentMethod}</TableCell>
                     <TableCell className="text-right">
-                      <span className={`font-semibold ${tx.type === 'Income' ? 'text-green-600' : 'text-slate-900'}`}>
-                        {tx.type === 'Income' ? '+' : '-'} {formatCurrency(tx.amount)}
-                      </span>
+                      {tx.type === 'Expense' ? (
+                        <span className="font-medium text-red-600">{formatCurrency(tx.amount)}</span>
+                      ) : '--'}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {tx.type === 'Income' ? (
+                        <span className="font-medium text-green-600">{formatCurrency(tx.amount)}</span>
+                      ) : '--'}
                     </TableCell>
                     {user?.role === 'ADMIN' && (
                       <TableCell className="flex gap-2">

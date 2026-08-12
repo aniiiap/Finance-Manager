@@ -282,7 +282,7 @@ export default function InvoiceTemplate({ invoice, innerRef, className = "" }) {
             <td className="border-r-[1.5px] border-black border-t-transparent" />
             <td className="border-r-[1.5px] border-black border-t-transparent" />
             <td className="border-r-[1.5px] border-black border-t-transparent" />
-            <td className="text-right px-1.5 py-1.5 font-bold border-t-[1.5px] border-black">
+            <td className="text-right px-1.5 py-1.5 font-bold border-t-transparent border-b-transparent">
               {fmt(items.filter(item => parseFloat(item.amount || 0) >= 0).reduce((sum, item) => sum + parseFloat(item.amount || 0), 0))}
             </td>
           </tr>
@@ -308,6 +308,17 @@ export default function InvoiceTemplate({ invoice, innerRef, className = "" }) {
               </td>
             </tr>
           ))}
+
+          <tr>
+            <td className="border-r-[1.5px] border-black border-t-transparent border-b-transparent" />
+            <td className="border-r-[1.5px] border-black border-t-transparent border-b-transparent" />
+            <td className="border-r-[1.5px] border-black border-t-transparent border-b-transparent" />
+            <td className="border-r-[1.5px] border-black border-t-transparent border-b-transparent" />
+            <td className="border-r-[1.5px] border-black border-t-transparent border-b-transparent" />
+            <td className="border-r-[1.5px] border-black border-t-transparent border-b-transparent" />
+            <td className="border-r-[1.5px] border-black border-t-transparent border-b-transparent" />
+            <td className="border-t-[1.5px] border-black border-b-transparent" />
+          </tr>
 
           {parseFloat(inv.total_cgst) > 0 && (
             <tr>

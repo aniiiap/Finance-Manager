@@ -92,8 +92,6 @@ export default function Clients() {
       "Name": client.name,
       "Company": client.company || '',
       "Budget": client.budget ? parseFloat(client.budget).toFixed(2) : '-',
-      "Phone": client.phone || '',
-      "Address": client.address || '',
       "Projects": clientProjects.length > 0 ? clientProjects.map(p => p.name).join(", ") : "-"
     };
   });
@@ -108,7 +106,7 @@ export default function Clients() {
         <div className="flex gap-2 w-full sm:w-auto flex-wrap">
           <ExportButtons 
             data={exportData} 
-            columns={["Name", "Company", "Budget", "Phone", "Address", "Projects"]}
+            columns={["Name", "Company", "Budget", "Projects"]}
             filename={`Clients_${new Date().toISOString().split('T')[0]}`}
             title="Clients Report"
           />
@@ -165,14 +163,13 @@ export default function Clients() {
                 <TableHead>Company</TableHead>
                 <TableHead>Projects</TableHead>
                 <TableHead>Budget</TableHead>
-                <TableHead>Status</TableHead>
                 {user?.role === 'ADMIN' && <TableHead className="w-[80px]"></TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
               {paginatedClients.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={user?.role === 'ADMIN' ? 7 : 6} className="text-center py-8 text-slate-500">
+                  <TableCell colSpan={user?.role === 'ADMIN' ? 6 : 5} className="text-center py-8 text-slate-500">
                     No clients found.
                   </TableCell>
                 </TableRow>
@@ -204,11 +201,6 @@ export default function Clients() {
                     )}
                   </TableCell>
                   <TableCell>{client.budget ? parseFloat(client.budget).toFixed(2) : '--'}</TableCell>
-                  <TableCell>
-                    <Badge variant={client.status === 'Active' ? 'success' : 'outline'}>
-                      {client.status || 'Active'}
-                    </Badge>
-                  </TableCell>
                   {user?.role === 'ADMIN' && (
                     <TableCell className="flex gap-3">
                       <button onClick={() => { setClientToEdit(client); setIsEditModalOpen(true); }} className="text-indigo-400 hover:text-indigo-600 hover:scale-110 transition-all" title="Edit Client">

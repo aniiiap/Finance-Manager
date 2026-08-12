@@ -126,9 +126,7 @@ export default function Projects() {
     return {
       "Project Name": project.name,
       "Client": project.client_name || project.client,
-      "Status": project.status,
-      "Income": received,
-      "Expense": expenses,
+      "Budget": project.budget ? parseFloat(project.budget).toFixed(2) : '-',
       "Profit": received - expenses
     }
   })
@@ -142,8 +140,8 @@ export default function Projects() {
         </div>
         <div className="flex gap-2 w-full sm:w-auto flex-wrap">
           <ExportButtons 
-            data={exportData} 
-            columns={["Project Name", "Client", "Status", "Income", "Expense", "Profit"]}
+            data={exportData}
+            columns={["Project Name", "Client", "Budget", "Profit"]}
             filename={`Projects_${new Date().toISOString().split('T')[0]}`}
             title="Projects Report"
           />
@@ -197,15 +195,13 @@ export default function Projects() {
                   <TableHead>Client</TableHead>
                   <TableHead>Budget</TableHead>
                   <TableHead>Profit</TableHead>
-                  <TableHead>Progress</TableHead>
-                  <TableHead>Status</TableHead>
                   {user?.role === 'ADMIN' && <TableHead className="w-[120px] text-right">Actions</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {paginatedProjects.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={user?.role === 'ADMIN' ? 8 : 7} className="text-center py-8 text-slate-500">
+                    <TableCell colSpan={user?.role === 'ADMIN' ? 6 : 5} className="text-center py-8 text-slate-500">
                       No projects found.
                     </TableCell>
                   </TableRow>
@@ -235,17 +231,6 @@ export default function Projects() {
                       <TableCell>{project.client_name || project.client || '--'}</TableCell>
                       <TableCell>{formatCurrency(project.budget)}</TableCell>
                       <TableCell className="text-green-600 font-medium">{formatCurrency(received - expenses)}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Progress value={progress} className="w-16 h-2" />
-                          <span className="text-xs text-slate-500">{progress}%</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={project.status === 'Active' ? 'success' : 'outline'}>
-                          {project.status || 'Active'}
-                        </Badge>
-                      </TableCell>
                       {user?.role === 'ADMIN' && (
                         <TableCell className="text-right" onClick={e => e.stopPropagation()}>
                           <div className="flex items-center justify-end gap-1">

@@ -98,17 +98,33 @@ export default function Ledger() {
   const totalPages = Math.ceil(ledgerData.length / itemsPerPage)
   const paginatedLedger = ledgerData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
 
-  const exportData = ledgerData.map(tx => ({
-    "Date": new Date(tx.date).toLocaleDateString(),
-    "Project": tx.project_name || tx.project,
-    "Party": tx.party_name || getPartyName(tx.party_id || tx.party),
-    "Narration": tx.narration || tx.description || '',
-    "Category": getCategoryName(tx.category_id || tx.category),
-    "Method": tx.payment_method,
-    "Credit": tx.type === 'Income' ? tx.amount : '',
-    "Debit": tx.type === 'Expense' ? tx.amount : '',
-    "Balance": tx.runningBalance
-  }))
+  const totalDebit = ledgerData.reduce((sum, tx) => sum + (tx.type === 'Expense' ? Number(tx.amount) : 0), 0);
+  const totalCredit = ledgerData.reduce((sum, tx) => sum + (tx.type === 'Income' ? Number(tx.amount) : 0), 0);
+
+  const exportData = [
+    ...ledgerData.map(tx => ({
+      "Date": new Date(tx.date).toLocaleDateString(),
+      "Project": tx.project_name || tx.project,
+      "Party": tx.party_name || getPartyName(tx.party_id || tx.party),
+      "Narration": tx.narration || tx.description || '',
+      "Category": getCategoryName(tx.category_id || tx.category),
+      "Method": tx.paymentMethod || tx.payment_method || '',
+      "Credit": tx.type === 'Income' ? tx.amount : '',
+      "Debit": tx.type === 'Expense' ? tx.amount : '',
+      "Balance": tx.runningBalance
+    })),
+    {
+      "Date": "TOTAL",
+      "Project": "",
+      "Party": "",
+      "Narration": "",
+      "Category": "",
+      "Method": "",
+      "Credit": totalCredit.toFixed(2),
+      "Debit": totalDebit.toFixed(2),
+      "Balance": ledgerData.length > 0 ? Number(ledgerData[0].runningBalance).toFixed(2) : '0.00'
+    }
+  ]
 
   return (
     <div className="space-y-6">
