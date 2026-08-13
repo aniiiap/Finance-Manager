@@ -1,15 +1,17 @@
 import { useState, useEffect } from "react"
+import { useNavigate } from "react-router-dom"
 import { useAuth } from "../context/AuthContext"
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table"
 import { Button } from "../components/ui/button"
 import { Modal } from "../components/ui/modal"
-import { ShieldAlert, Building2, UserPlus, Power } from "lucide-react"
+import { ShieldAlert, Building2, UserPlus, Power, Activity } from "lucide-react"
 import { apiFetch } from '../lib/api'
 
 
 export default function SuperAdminDashboard() {
   const { user, token } = useAuth()
+  const navigate = useNavigate()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState("")
@@ -159,130 +161,170 @@ export default function SuperAdminDashboard() {
     }
   }
 
+  // Dynamic Greeting
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good Morning";
+    if (hour < 18) return "Good Afternoon";
+    return "Good Evening";
+  };
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight text-purple-900">Super Admin Dashboard</h2>
-          <p className="text-sm text-slate-500">Manage your SaaS clients, onboarding, and platform access.</p>
+    <div className="space-y-8 animate-in fade-in duration-700">
+      {/* Hero Section */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-900 via-purple-900 to-indigo-950 p-8 sm:p-12 shadow-2xl">
+        <div className="absolute top-0 right-0 -mr-20 -mt-20 w-72 h-72 rounded-full bg-purple-500 opacity-20 blur-[80px] mix-blend-screen animate-pulse"></div>
+        <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-80 h-80 rounded-full bg-indigo-500 opacity-20 blur-[100px] mix-blend-screen animate-pulse" style={{ animationDelay: '1s' }}></div>
+        
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
+          <div className="space-y-2">
+            <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
+              {getGreeting()}, <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-300 to-indigo-300">Creator</span>
+            </h1>
+            <p className="text-indigo-200 text-sm sm:text-base font-medium max-w-xl">
+              Plan Today. Build Tomorrow.
+            </p>
+          </div>
+          
+          <button 
+            onClick={() => setIsModalOpen(true)} 
+            className="group relative inline-flex items-center justify-center gap-2 rounded-xl bg-white/10 px-6 py-3 text-sm font-semibold text-white shadow-sm backdrop-blur-md transition-all hover:bg-white/20 border border-white/10 overflow-hidden"
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/0 via-white/10 to-purple-500/0 -translate-x-full animate-[shimmer_2s_infinite]"></div>
+            <UserPlus className="w-4 h-4 transition-transform group-hover:scale-110" />
+            <span>Onboard Client</span>
+          </button>
         </div>
-        <Button onClick={() => setIsModalOpen(true)} className="gap-2 bg-purple-700 hover:bg-purple-800 text-white">
-          <Building2 className="w-4 h-4" /> Onboard New Client Company
-        </Button>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 mb-6">
-        <Card className="bg-gradient-to-br from-purple-500 to-indigo-600 text-white border-0 shadow-md">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium opacity-80">Total Client Companies</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">{companies.length}</div>
-          </CardContent>
-        </Card>
+      {/* Stats Section */}
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="group relative overflow-hidden rounded-2xl bg-white p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 transition-all hover:-translate-y-1 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)]">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-slate-500">Total Clients</p>
+              <h3 className="text-3xl font-bold tracking-tight text-slate-900 mt-1">{companies.length}</h3>
+            </div>
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-purple-100 text-purple-600 transition-colors group-hover:bg-purple-600 group-hover:text-white">
+              <Building2 className="h-6 w-6" />
+            </div>
+          </div>
+        </div>
+        <div className="group relative overflow-hidden rounded-2xl bg-white p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 transition-all hover:-translate-y-1 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)]">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-slate-500">Active Companies</p>
+              <h3 className="text-3xl font-bold tracking-tight text-slate-900 mt-1">{companies.filter(c => c.status !== 'Suspended').length}</h3>
+            </div>
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-100 text-indigo-600 transition-colors group-hover:bg-indigo-600 group-hover:text-white">
+              <Activity className="h-6 w-6" />
+            </div>
+          </div>
+        </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Client Companies</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto w-full">
-<Table>
+      {/* Table Section */}
+      <div className="rounded-2xl border border-slate-100 bg-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden">
+        <div className="border-b border-slate-100 bg-slate-50/50 px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <h3 className="text-lg font-bold text-slate-800">Client Directory</h3>
+        </div>
+        
+        <div className="overflow-x-auto">
+          <Table>
             <TableHeader>
-              <TableRow>
-                <TableHead>Company Name</TableHead>
-                <TableHead>Primary Contact</TableHead>
-                <TableHead>Admin Email</TableHead>
-                <TableHead>Admin Phone</TableHead>
-                <TableHead>Active Users</TableHead>
-                <TableHead>Expires On</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Platform Actions</TableHead>
+              <TableRow className="hover:bg-transparent">
+                <TableHead className="font-semibold text-slate-600">Company</TableHead>
+                <TableHead className="font-semibold text-slate-600">Primary Contact</TableHead>
+                <TableHead className="font-semibold text-slate-600">Users</TableHead>
+                <TableHead className="font-semibold text-slate-600">Status</TableHead>
+                <TableHead className="text-right font-semibold text-slate-600">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={6} className="text-center py-4">Loading...</TableCell></TableRow>
+                <TableRow><TableCell colSpan={5} className="text-center py-8 text-slate-500">Loading directory...</TableCell></TableRow>
               ) : companies.length === 0 ? (
-                <TableRow><TableCell colSpan={7} className="text-center py-4 text-slate-500">No client companies onboarded yet.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={5} className="text-center py-8 text-slate-500">No client companies onboarded yet.</TableCell></TableRow>
               ) : (
                 companies.map((c) => (
-                  <TableRow key={c.id}>
-                    <TableCell className="font-bold text-slate-900">{c.name}</TableCell>
-                    <TableCell>{c.contact_name}</TableCell>
-                    <TableCell className="text-slate-500">{c.contact_email}</TableCell>
-                    <TableCell className="text-slate-500">{c.contact_phone || 'N/A'}</TableCell>
-                    <TableCell>{c.users_count} users</TableCell>
+                  <TableRow key={c.id} className="group hover:bg-slate-50/50 transition-colors">
                     <TableCell>
-                      <div className="flex flex-col items-start gap-1">
-                        <span>{c.expires_at ? new Date(c.expires_at).toLocaleDateString() : 'N/A'}</span>
-                        {c.expires_at && new Date(c.expires_at) < new Date() && (
-                          <span className="inline-flex items-center px-1.5 py-0.5 rounded-sm text-[10px] font-bold bg-red-100 text-red-700 uppercase tracking-wider">Expired</span>
-                        )}
+                      <div className="flex flex-col">
+                        <span className="font-bold text-slate-900">{c.name}</span>
+                        <span className="text-xs text-slate-500">{c.contact_email}</span>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${c.status === 'Suspended' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+                      <div className="flex flex-col">
+                        <span className="font-medium text-slate-700">{c.contact_name}</span>
+                        <span className="text-xs text-slate-500">{c.contact_phone || 'N/A'}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-slate-100 text-slate-700">
+                        {c.users_count} users
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${c.status === 'Suspended' ? 'bg-red-50 text-red-600 border border-red-200' : 'bg-emerald-50 text-emerald-600 border border-emerald-200'}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${c.status === 'Suspended' ? 'bg-red-500' : 'bg-emerald-500 animate-pulse'}`}></span>
                         {c.status || 'Active'}
                       </span>
                     </TableCell>
-                    <TableCell className="text-right flex items-center justify-end gap-2">
-                      <Button
-                        onClick={() => handleRenewCompany(c.id)}
-                        variant="outline"
-                        size="sm"
-                        className="text-purple-600 hover:text-purple-700 hover:bg-purple-50"
-                      >
-                        Renew
-                      </Button>
-                      <Button
-                        onClick={() => {
-                          setCompanyToEdit(c)
-                          setIsEditModalOpen(true)
-                        }}
-                        variant="outline"
-                        size="sm"
-                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                      >
-                        Edit
-                      </Button>
-                      <Button 
-                        onClick={() => handleToggleStatus(c.id, c.status || 'Active')}
-                        variant="outline" 
-                        size="sm" 
-                        className={`gap-2 ${c.status === 'Suspended' ? 'text-green-600 hover:text-green-700 hover:bg-green-50' : 'text-red-600 hover:text-red-700 hover:bg-red-50'}`}
-                      >
-                         <Power className="w-3 h-3" /> {c.status === 'Suspended' ? 'Activate' : 'Suspend'}
-                      </Button>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-2 transition-opacity">
+                        <button
+                          onClick={() => handleRenewCompany(c.id)}
+                          className="px-3 py-1.5 text-xs font-medium text-purple-700 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors"
+                        >
+                          Renew
+                        </button>
+                        <button
+                          onClick={() => { setCompanyToEdit(c); setIsEditModalOpen(true); }}
+                          className="px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => navigate(`/super-admin/company/${c.id}/settings`)}
+                          className="px-3 py-1.5 text-xs font-medium text-indigo-700 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors"
+                        >
+                          Profile
+                        </button>
+                        <button
+                          onClick={() => handleToggleStatus(c.id, c.status || 'Active')}
+                          className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${c.status === 'Suspended' ? 'text-emerald-700 bg-emerald-50 hover:bg-emerald-100' : 'text-red-700 bg-red-50 hover:bg-red-100'}`}
+                        >
+                          {c.status === 'Suspended' ? 'Activate' : 'Suspend'}
+                        </button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
               )}
             </TableBody>
           </Table>
-</div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Onboard New Client Company">
         <form onSubmit={handleCreateCompany} className="space-y-4">
           {error && <div className="text-red-600 text-sm">{error}</div>}
           <div>
             <label className="block text-sm font-medium mb-1">Company Name</label>
-            <input name="company_name" required className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-600" placeholder="e.g. Metro Builders LLC" />
+            <input name="company_name" required className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600" placeholder="e.g. Metro Builders LLC" />
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Primary Contact Name</label>
-            <input name="contact_name" required className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-600" placeholder="e.g. Sarah Connor" />
+            <input name="contact_name" required className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600" placeholder="e.g. Sarah Connor" />
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Admin Email</label>
-            <input name="contact_email" type="email" required className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-600" placeholder="admin@metrobuilders.com" />
+            <input name="contact_email" type="email" required className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600" placeholder="admin@metrobuilders.com" />
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Admin Phone Number</label>
-            <input name="contact_phone" type="tel" required className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-600" placeholder="+1234567890" />
+            <input name="contact_phone" type="tel" required className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600" placeholder="+1234567890" />
             <p className="text-xs text-slate-500 mt-1">
               A secure temporary password will be generated and shown once after creation.
             </p>
@@ -290,7 +332,7 @@ export default function SuperAdminDashboard() {
           
           <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
             <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>Cancel</Button>
-            <Button type="submit" className="bg-purple-700 hover:bg-purple-800 text-white">Create Company</Button>
+            <Button type="submit" className="bg-indigo-600 hover:bg-indigo-700 text-white">Create Company</Button>
           </div>
         </form>
       </Modal>
@@ -300,25 +342,25 @@ export default function SuperAdminDashboard() {
           {editError && <div className="text-red-600 text-sm">{editError}</div>}
           <div>
             <label className="block text-sm font-medium mb-1">Company Name</label>
-            <input name="company_name" defaultValue={companyToEdit?.name} required className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-600" />
+            <input name="company_name" defaultValue={companyToEdit?.name} required className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600" />
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Primary Contact Name</label>
-            <input name="contact_name" defaultValue={companyToEdit?.contact_name} required className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-600" />
+            <input name="contact_name" defaultValue={companyToEdit?.contact_name} required className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600" />
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Admin Email (Login ID)</label>
-            <input name="contact_email" type="email" defaultValue={companyToEdit?.contact_email} required className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-600" />
+            <input name="contact_email" type="email" defaultValue={companyToEdit?.contact_email} required className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600" />
             <p className="text-xs text-amber-600 mt-1">Warning: Changing this email will change the admin's login credentials.</p>
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Admin Phone Number</label>
-            <input name="contact_phone" type="tel" defaultValue={companyToEdit?.contact_phone} required className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-600" />
+            <input name="contact_phone" type="tel" defaultValue={companyToEdit?.contact_phone} required className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600" />
           </div>
           
           <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
             <Button type="button" variant="outline" onClick={() => { setIsEditModalOpen(false); setCompanyToEdit(null); }}>Cancel</Button>
-            <Button type="submit" className="bg-purple-700 hover:bg-purple-800 text-white">Save Changes</Button>
+            <Button type="submit" className="bg-indigo-600 hover:bg-indigo-700 text-white">Save Changes</Button>
           </div>
         </form>
       </Modal>
@@ -349,7 +391,7 @@ export default function SuperAdminDashboard() {
                 )
                 setCreatedCredentials(null)
               }}
-              className="bg-purple-700 hover:bg-purple-800 text-white"
+              className="bg-indigo-600 hover:bg-indigo-700 text-white"
             >
               Copy &amp; Close
             </Button>

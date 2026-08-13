@@ -1,14 +1,14 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/card"
-import { Button } from "../components/ui/button"
 import { useAuth } from "../context/AuthContext"
 import { useData } from "../context/DataContext"
 import { apiFetch } from '../lib/api'
+import { Lock } from 'lucide-react'
 
 
 export default function Settings() {
   const { token, user } = useAuth()
-  const { companyInfo, refreshData } = useData()
+  const { companyInfo } = useData()
   const [settings, setSettings] = useState({
     name: "",
     address: "",
@@ -21,13 +21,6 @@ export default function Settings() {
     authorised_signatory: "",
     payment_methods: ""
   })
-  const [isLoading, setIsLoading] = useState(false)
-  const [message, setMessage] = useState("")
-
-  const [logoFile, setLogoFile] = useState(null)
-  const [signatureFile, setSignatureFile] = useState(null)
-  const [isUploadingLogo, setIsUploadingLogo] = useState(false)
-  const [isUploadingSignature, setIsUploadingSignature] = useState(false)
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -57,82 +50,6 @@ export default function Settings() {
     fetchSettings()
   }, [token])
 
-  const handleSave = async (e) => {
-    e.preventDefault()
-    setIsLoading(true)
-    setMessage("")
-    try {
-      const res = await apiFetch('/api/sales/company-settings', {
-        method: "PUT",
-        headers: { 
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(settings)
-      })
-      if (res.ok) {
-        setMessage("Settings saved successfully!")
-      } else {
-        setMessage("Failed to save settings.")
-      }
-    } catch (err) {
-      setMessage("Error connecting to server.")
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const handleChange = (e) => {
-    setSettings(prev => ({ ...prev, [e.target.name]: e.target.value }))
-  }
-
-  const handleUploadLogo = async () => {
-    if (!logoFile) return
-    setIsUploadingLogo(true)
-    const formData = new FormData()
-    formData.append('file', logoFile)
-    try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/data/company-info/upload-logo`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
-        body: formData
-      })
-      if (res.ok) {
-        refreshData()
-        setLogoFile(null)
-      } else {
-        alert('Upload failed')
-      }
-    } catch (err) {
-      console.error(err)
-    } finally {
-      setIsUploadingLogo(false)
-    }
-  }
-
-  const handleUploadSignature = async () => {
-    if (!signatureFile) return
-    setIsUploadingSignature(true)
-    const formData = new FormData()
-    formData.append('file', signatureFile)
-    try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/data/company-info/upload-signature`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
-        body: formData
-      })
-      if (res.ok) {
-        refreshData()
-        setSignatureFile(null)
-      } else {
-        alert('Upload failed')
-      }
-    } catch (err) {
-      console.error(err)
-    } finally {
-      setIsUploadingSignature(false)
-    }
-  }
-
   if (user?.role !== 'ADMIN' && user?.role !== 'SUPER_ADMIN') {
     return <div className="p-4">You do not have permission to view this page.</div>
   }
@@ -141,7 +58,15 @@ export default function Settings() {
     <div className="space-y-6 max-w-4xl">
       <div>
         <h2 className="text-2xl font-bold tracking-tight">Settings</h2>
-        <p className="text-sm text-slate-500">Manage your application preferences and company profile.</p>
+        <p className="text-sm text-slate-500">View your application preferences and company profile.</p>
+      </div>
+
+      <div className="bg-blue-50 border border-blue-200 text-blue-800 rounded-lg p-4 flex items-start gap-3">
+        <Lock className="w-5 h-5 mt-0.5 shrink-0" />
+        <div>
+          <h3 className="font-semibold text-sm">Profile is Read-Only</h3>
+          <p className="text-sm mt-1">Company profile settings (including logos and bank details) are managed centrally by the System Administrator. Please contact support to request any changes.</p>
+        </div>
       </div>
 
       <Card>
@@ -155,17 +80,15 @@ export default function Settings() {
                 <h3 className="text-lg font-medium">Company Logo</h3>
                 <p className="text-sm text-slate-500">Used on letterheads and invoices.</p>
               </div>
-              {companyInfo?.logo_url && (
+              {companyInfo?.logo_url ? (
                 <div className="border rounded-md p-4 bg-slate-50 flex justify-center items-center h-32">
                   <img src={companyInfo.logo_url} alt="Company Logo" className="max-h-full max-w-full object-contain" crossOrigin="anonymous" />
                 </div>
+              ) : (
+                <div className="border rounded-md p-4 bg-slate-50 flex justify-center items-center h-32 text-slate-400 text-sm">
+                  No logo uploaded
+                </div>
               )}
-              <div className="flex items-center gap-4">
-                <input type="file" accept="image/*" onChange={(e) => setLogoFile(e.target.files[0])} className="text-sm w-full border p-1.5 rounded-md" />
-                <Button onClick={handleUploadLogo} disabled={!logoFile || isUploadingLogo} size="sm">
-                  {isUploadingLogo ? 'Uploading...' : 'Upload'}
-                </Button>
-              </div>
             </div>
 
             <div className="space-y-4">
@@ -173,92 +96,79 @@ export default function Settings() {
                 <h3 className="text-lg font-medium">Authorized Signature</h3>
                 <p className="text-sm text-slate-500">Used on invoices and official documents.</p>
               </div>
-              {companyInfo?.signature_url && (
+              {companyInfo?.signature_url ? (
                 <div className="border rounded-md p-4 bg-slate-50 flex justify-center items-center h-32">
                   <img src={companyInfo.signature_url} alt="Company Signature" className="max-h-full max-w-full object-contain" crossOrigin="anonymous" />
                 </div>
+              ) : (
+                <div className="border rounded-md p-4 bg-slate-50 flex justify-center items-center h-32 text-slate-400 text-sm">
+                  No signature uploaded
+                </div>
               )}
-              <div className="flex items-center gap-4">
-                <input type="file" accept="image/*" onChange={(e) => setSignatureFile(e.target.files[0])} className="text-sm w-full border p-1.5 rounded-md" />
-                <Button onClick={handleUploadSignature} disabled={!signatureFile || isUploadingSignature} size="sm">
-                  {isUploadingSignature ? 'Uploading...' : 'Upload'}
-                </Button>
-              </div>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      <form onSubmit={handleSave}>
-        <Card>
-          <CardHeader>
-            <CardTitle>Company Invoice Profile</CardTitle>
-            <CardDescription>These details will appear on your Tax Invoices.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            
+      <Card>
+        <CardHeader>
+          <CardTitle>Company Invoice Profile</CardTitle>
+          <CardDescription>These details appear on your Tax Invoices.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Company Name</label>
+            <input type="text" name="name" value={settings.name} readOnly className="flex h-10 w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500 cursor-not-allowed" />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Company Address</label>
+            <textarea name="address" value={settings.address} readOnly rows={3} className="flex w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500 cursor-not-allowed" />
+          </div>
+          
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <label className="text-sm font-medium">Company Name</label>
-              <input type="text" name="name" value={settings.name} onChange={handleChange} className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950" placeholder="e.g. ORBIT PROJECTS PRIVATE LIMITED" />
-              <p className="text-xs text-slate-500">Legal company name only — shown on the invoice header (not a personal name).</p>
+              <label className="text-sm font-medium">GSTIN</label>
+              <input type="text" name="gstin" value={settings.gstin} readOnly className="flex h-10 w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500 cursor-not-allowed" />
             </div>
-
             <div className="space-y-2">
-              <label className="text-sm font-medium">Company Address</label>
-              <textarea name="address" value={settings.address} onChange={handleChange} rows={3} className="flex w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950" placeholder={"e.g. HOUSE NO 22\nJATO KA MOHALLA\nBHILWARA"} />
-              <p className="text-xs text-slate-500">Address lines only — do not repeat the company name here.</p>
-            </div>
-            
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">GSTIN</label>
-                <input type="text" name="gstin" value={settings.gstin} onChange={handleChange} className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950" />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">State Name & Code</label>
-                <div className="flex gap-2">
-                  <input type="text" name="state_name" value={settings.state_name} onChange={handleChange} placeholder="Rajasthan" className="flex h-10 w-2/3 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950" />
-                  <input type="text" name="state_code" value={settings.state_code} onChange={handleChange} placeholder="08" className="flex h-10 w-1/3 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950" />
-                </div>
+              <label className="text-sm font-medium">State Name & Code</label>
+              <div className="flex gap-2">
+                <input type="text" name="state_name" value={settings.state_name} readOnly className="flex h-10 w-2/3 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500 cursor-not-allowed" />
+                <input type="text" name="state_code" value={settings.state_code} readOnly className="flex h-10 w-1/3 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500 cursor-not-allowed" />
               </div>
             </div>
+          </div>
 
-            <h3 className="text-lg font-medium pt-4">Bank Details</h3>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Bank Name</label>
-                <input type="text" name="bank_name" value={settings.bank_name} onChange={handleChange} placeholder="Punjab National Bank" className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950" />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Account Number</label>
-                <input type="text" name="bank_account_no" value={settings.bank_account_no} onChange={handleChange} className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950" />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Branch & IFSC Code</label>
-                <input type="text" name="bank_ifsc" value={settings.bank_ifsc} onChange={handleChange} placeholder="PUNB0090800" className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950" />
-              </div>
-            </div>
-
-            <div className="space-y-2 pt-4">
-              <label className="text-sm font-medium">Authorised Signatory Name</label>
-              <input type="text" name="authorised_signatory" value={settings.authorised_signatory} onChange={handleChange} className="flex h-10 w-full sm:w-1/2 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950" />
-            </div>
-
-            <h3 className="text-lg font-medium pt-4">Payment Options</h3>
+          <h3 className="text-lg font-medium pt-4">Bank Details</h3>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div className="space-y-2">
-              <label className="text-sm font-medium">Custom Payment Methods</label>
-              <input type="text" name="payment_methods" value={settings.payment_methods} onChange={handleChange} placeholder="e.g. Net Banking, UPI, Cash, GPay, HDFC Corporate" className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950" />
-              <p className="text-xs text-slate-500">Provide a comma-separated list of payment methods (e.g. Net Banking, UPI, Cash, GPay, Bank Transfer).</p>
+              <label className="text-sm font-medium">Bank Name</label>
+              <input type="text" name="bank_name" value={settings.bank_name} readOnly className="flex h-10 w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500 cursor-not-allowed" />
             </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Account Number</label>
+              <input type="text" name="bank_account_no" value={settings.bank_account_no} readOnly className="flex h-10 w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500 cursor-not-allowed" />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Branch & IFSC Code</label>
+              <input type="text" name="bank_ifsc" value={settings.bank_ifsc} readOnly className="flex h-10 w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500 cursor-not-allowed" />
+            </div>
+          </div>
 
-            {message && <p className="text-sm text-green-600 font-medium">{message}</p>}
-            <Button type="submit" disabled={isLoading} className="mt-4">
-              {isLoading ? "Saving..." : "Save Invoice Settings"}
-            </Button>
-          </CardContent>
-        </Card>
-      </form>
+          <div className="space-y-2 pt-4">
+            <label className="text-sm font-medium">Authorised Signatory Name</label>
+            <input type="text" name="authorised_signatory" value={settings.authorised_signatory} readOnly className="flex h-10 w-full sm:w-1/2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500 cursor-not-allowed" />
+          </div>
+
+          <h3 className="text-lg font-medium pt-4">Payment Options</h3>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Custom Payment Methods</label>
+            <input type="text" name="payment_methods" value={settings.payment_methods} readOnly className="flex h-10 w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500 cursor-not-allowed" />
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }
-

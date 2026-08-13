@@ -460,6 +460,76 @@ router.put('/companies/:id', verifyToken, verifyAdmin, async (req, res) => {
   }
 });
 
+// --- SUPER ADMIN: COMPANY PROFILE ROUTES ---
+router.get('/companies/:id/settings', verifyToken, verifyAdmin, async (req, res) => {
+  if (req.user.role !== 'SUPER_ADMIN') return res.status(403).json({ error: 'Forbidden' });
+  try {
+    const { id } = req.params;
+    const result = await pool.query('SELECT name, address, gstin, state_name, state_code, bank_name, bank_account_no, bank_ifsc, authorised_signatory, payment_methods, logo_url, signature_url, contact_name, contact_email FROM companies WHERE id = $1', [id]);
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Company not found' });
+    
+    // Also fetch admin email and contact phone from users table
+    const userResult = await pool.query("SELECT email as admin_email, phone as contact_phone FROM users WHERE company_id = $1 AND role = 'ADMIN' LIMIT 1", [id]);
+    const contact_phone = userResult.rows[0]?.contact_phone || '';
+    const admin_email = userResult.rows[0]?.admin_email || '';
+    
+    console.log("Super Admin fetching company settings for id:", id);
+    console.log("DB Result:", result.rows[0]);
+    
+    res.json({ ...result.rows[0], contact_phone, admin_email });
+  } catch (err) { 
+    console.error("Error in super admin settings fetch:", err);
+    res.status(500).json({ error: 'Server error' }); 
+  }
+});
+
+router.put('/companies/:id/settings', verifyToken, verifyAdmin, async (req, res) => {
+  if (req.user.role !== 'SUPER_ADMIN') return res.status(403).json({ error: 'Forbidden' });
+  try {
+    const { id } = req.params;
+    const { name = '', address = '', gstin = '', state_name = '', state_code = '', bank_name = '', bank_account_no = '', bank_ifsc = '', authorised_signatory = '', payment_methods = '', contact_name = '', contact_email = '', admin_email = '', contact_phone = '' } = req.body;
+    await pool.query(
+      `UPDATE companies 
+       SET name = COALESCE(NULLIF($1, ''), name), address = $2, gstin = $3, state_name = $4, state_code = $5, bank_name = $6, bank_account_no = $7, bank_ifsc = $8, authorised_signatory = $9, payment_methods = $10, contact_name = $11, contact_email = $12
+       WHERE id = $13`,
+      [name, address, gstin, state_name, state_code, bank_name, bank_account_no, bank_ifsc, authorised_signatory, payment_methods, contact_name, contact_email, id]
+    );
+    
+    if (contact_name || admin_email || contact_phone) {
+      await pool.query(
+        "UPDATE users SET name = COALESCE(NULLIF($1, ''), name), email = COALESCE(NULLIF($2, ''), email), phone = COALESCE(NULLIF($3, ''), phone) WHERE company_id = $4 AND role = 'ADMIN'",
+        [contact_name, admin_email, contact_phone, id]
+      );
+    }
+    
+    res.json({ success: true });
+  } catch (err) { 
+    require('fs').appendFileSync('error.log', new Date().toISOString() + ' PUT Error: ' + err.stack + '\\n');
+    console.error("PUT Error:", err);
+    res.status(500).json({ error: 'Server error', details: err.message }); 
+  }
+});
+
+router.post('/companies/:id/upload-logo', verifyToken, verifyAdmin, upload.single('file'), async (req, res) => {
+  if (req.user.role !== 'SUPER_ADMIN') return res.status(403).json({ error: 'Forbidden' });
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No file provided' });
+    const base64Data = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+    await pool.query('UPDATE companies SET logo_url = $1 WHERE id = $2', [base64Data, req.params.id]);
+    res.json({ success: true, logo_url: base64Data });
+  } catch(e) { res.status(500).json({error: 'Server error'}); }
+});
+
+router.post('/companies/:id/upload-signature', verifyToken, verifyAdmin, upload.single('file'), async (req, res) => {
+  if (req.user.role !== 'SUPER_ADMIN') return res.status(403).json({ error: 'Forbidden' });
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No file provided' });
+    const base64Data = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+    await pool.query('UPDATE companies SET signature_url = $1 WHERE id = $2', [base64Data, req.params.id]);
+    res.json({ success: true, signature_url: base64Data });
+  } catch(e) { res.status(500).json({error: 'Server error'}); }
+});
+
 router.put('/projects/:id', verifyToken, verifyAdmin, requireClient, requireModule('Projects'), async (req, res) => {
   try {
     if (!(await ensureProjectAccess(req, req.params.id))) {

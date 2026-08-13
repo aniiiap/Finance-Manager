@@ -20,6 +20,7 @@ import SetPassword from './pages/SetPassword'
 import AdminSettings from './pages/AdminSettings'
 import Settings from './pages/Settings'
 import SuperAdminDashboard from './pages/SuperAdminDashboard'
+import SuperAdminCompanySettings from './pages/SuperAdminCompanySettings'
 import { DataProvider } from './context/DataContext'
 import { AuthProvider, useAuth } from './context/AuthContext'
 
@@ -85,6 +86,7 @@ function App() {
                   
                   {/* Super Admin Route */}
                   <Route path="super-admin" element={<ProtectedRoute requireSuperAdmin={true}><SuperAdminDashboard /></ProtectedRoute>} />
+                  <Route path="super-admin/company/:id/settings" element={<ProtectedRoute requireSuperAdmin={true}><SuperAdminCompanySettings /></ProtectedRoute>} />
                 </Route>
               </Routes>
             </Router>

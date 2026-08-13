@@ -108,11 +108,7 @@ export default function Sales() {
   }
 
   const handleCreateClick = () => {
-    if (!isSettingsComplete(companySettings)) {
-      openSettingsModal(true)
-    } else {
-      setView("create")
-    }
+    setView("create")
   }
 
   const fetchInvoices = async () => {
@@ -243,48 +239,47 @@ export default function Sales() {
   }
 
   const renderCompanyProfileForm = (submitLabel) => (
-    <form onSubmit={saveCompanySettings} className="space-y-4">
-      <p className="text-sm text-slate-500">
-        These details appear on every tax invoice. Use your legal company name — not a personal name.
-      </p>
+    <div className="space-y-4">
+      <div className="bg-blue-50 border border-blue-200 text-blue-800 rounded-lg p-4 flex items-start gap-3">
+        <div className="mt-0.5 shrink-0 font-bold">🔒</div>
+        <div>
+          <h3 className="font-semibold text-sm">Profile is Read-Only</h3>
+          <p className="text-sm mt-1">Company profile settings are managed centrally by your System Administrator. Please contact support to request any changes.</p>
+        </div>
+      </div>
 
       <div className="space-y-2">
         <label className="text-sm font-medium">Company Name *</label>
         <input
-          required
+          readOnly
           type="text"
           name="name"
           value={companySettings?.name || ""}
-          onChange={handleSettingsChange}
-          className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950"
-          placeholder="e.g. CPMR PROJECTS PRIVATE LIMITED"
+          className="flex h-10 w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500 cursor-not-allowed focus-visible:outline-none"
         />
       </div>
 
       <div className="space-y-2">
         <label className="text-sm font-medium">Company Address *</label>
         <textarea
-          required
+          readOnly
           name="address"
           value={companySettings?.address || ""}
-          onChange={handleSettingsChange}
           rows={3}
-          className="flex w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950"
-          placeholder={"e.g. HOUSE NO 22\nJATO KA MOHALLA\nBHILWARA"}
+          className="flex w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500 cursor-not-allowed focus-visible:outline-none"
         />
-        <p className="text-xs text-slate-500">Address lines only — do not repeat the company name here.</p>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="space-y-2">
           <label className="text-sm font-medium">GSTIN</label>
-          <input type="text" name="gstin" value={companySettings?.gstin || ""} onChange={handleSettingsChange} className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950" />
+          <input type="text" readOnly name="gstin" value={companySettings?.gstin || ""} className="flex h-10 w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500 cursor-not-allowed focus-visible:outline-none" />
         </div>
         <div className="space-y-2">
           <label className="text-sm font-medium">State Name & Code</label>
           <div className="flex gap-2">
-            <input type="text" name="state_name" value={companySettings?.state_name || ""} onChange={handleSettingsChange} placeholder="State Name" className="flex h-10 w-2/3 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950" />
-            <input type="text" name="state_code" value={companySettings?.state_code || ""} onChange={handleSettingsChange} placeholder="Code" className="flex h-10 w-1/3 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950" />
+            <input type="text" readOnly name="state_name" value={companySettings?.state_name || ""} className="flex h-10 w-2/3 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500 cursor-not-allowed focus-visible:outline-none" />
+            <input type="text" readOnly name="state_code" value={companySettings?.state_code || ""} className="flex h-10 w-1/3 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500 cursor-not-allowed focus-visible:outline-none" />
           </div>
         </div>
       </div>
@@ -293,30 +288,27 @@ export default function Sales() {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div className="space-y-2">
           <label className="text-sm font-medium">Bank Name *</label>
-          <input required type="text" name="bank_name" value={companySettings?.bank_name || ""} onChange={handleSettingsChange} placeholder="Bank Name" className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950" />
+          <input readOnly type="text" name="bank_name" value={companySettings?.bank_name || ""} className="flex h-10 w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500 cursor-not-allowed focus-visible:outline-none" />
         </div>
         <div className="space-y-2">
           <label className="text-sm font-medium">Account Number *</label>
-          <input required type="text" name="bank_account_no" value={companySettings?.bank_account_no || ""} onChange={handleSettingsChange} className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950" />
+          <input readOnly type="text" name="bank_account_no" value={companySettings?.bank_account_no || ""} className="flex h-10 w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500 cursor-not-allowed focus-visible:outline-none" />
         </div>
         <div className="space-y-2">
           <label className="text-sm font-medium">Branch & IFSC Code *</label>
-          <input required type="text" name="bank_ifsc" value={companySettings?.bank_ifsc || ""} onChange={handleSettingsChange} placeholder="IFSC" className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950" />
+          <input readOnly type="text" name="bank_ifsc" value={companySettings?.bank_ifsc || ""} className="flex h-10 w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500 cursor-not-allowed focus-visible:outline-none" />
         </div>
       </div>
 
       <div className="space-y-2">
         <label className="text-sm font-medium">Authorised Signatory Name</label>
-        <input type="text" name="authorised_signatory" value={companySettings?.authorised_signatory || ""} onChange={handleSettingsChange} className="flex h-10 w-full sm:w-1/2 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950" />
+        <input type="text" readOnly name="authorised_signatory" value={companySettings?.authorised_signatory || ""} className="flex h-10 w-full sm:w-1/2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500 cursor-not-allowed focus-visible:outline-none" />
       </div>
 
       <div className="flex justify-end gap-3 pt-2">
-        <Button type="button" variant="outline" onClick={closeSettingsModal}>Cancel</Button>
-        <Button type="submit" disabled={isSavingSettings}>
-          {isSavingSettings ? "Saving..." : submitLabel}
-        </Button>
+        <Button type="button" variant="outline" onClick={closeSettingsModal}>Close</Button>
       </div>
-    </form>
+    </div>
   )
 
   const companyProfileModal = (

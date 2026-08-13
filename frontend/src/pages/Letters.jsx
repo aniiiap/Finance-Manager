@@ -419,32 +419,32 @@ export default function Letters() {
 
       {/* Settings Modal */}
       <Modal isOpen={isSettingsModalOpen} onClose={() => setIsSettingsModalOpen(false)} title="Letterhead Profile" maxWidth="max-w-2xl">
-        <form onSubmit={handleSettingsSubmit} className="space-y-4">
-          <p className="text-sm text-slate-500">
-            These details appear on your printed letters.
-          </p>
+        <div className="space-y-4">
+          <div className="bg-blue-50 border border-blue-200 text-blue-800 rounded-lg p-4 flex items-start gap-3">
+            <div className="mt-0.5 shrink-0 font-bold">🔒</div>
+            <div>
+              <h3 className="font-semibold text-sm">Profile is Read-Only</h3>
+              <p className="text-sm mt-1">Company profile settings are managed centrally by your System Administrator. Please contact support to request any changes.</p>
+            </div>
+          </div>
 
           <div className="space-y-2">
             <label className="text-sm font-medium">Company Name *</label>
             <input
-              required
+              readOnly
               type="text"
               value={settingsForm.company_name}
-              onChange={(e) => setSettingsForm({ ...settingsForm, company_name: e.target.value })}
-              className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950"
-              placeholder="e.g. CPMR PROJECTS PRIVATE LIMITED"
+              className="flex h-10 w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500 cursor-not-allowed focus-visible:outline-none"
             />
           </div>
 
           <div className="space-y-2">
             <label className="text-sm font-medium">Company Address *</label>
             <textarea
-              required
+              readOnly
               value={settingsForm.address}
-              onChange={(e) => setSettingsForm({ ...settingsForm, address: e.target.value })}
               rows={3}
-              className="flex w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950"
-              placeholder={"e.g. HOUSE NO 22\\nJATO KA MOHALLA\\nBHILWARA"}
+              className="flex w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500 cursor-not-allowed focus-visible:outline-none"
             />
           </div>
 
@@ -452,19 +452,19 @@ export default function Letters() {
             <div className="space-y-2">
               <label className="text-sm font-medium">GSTIN</label>
               <input 
-                type="text" 
+                type="text"
+                readOnly
                 value={settingsForm.gstin}
-                onChange={(e) => setSettingsForm({ ...settingsForm, gstin: e.target.value })}
-                className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950" 
+                className="flex h-10 w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500 cursor-not-allowed focus-visible:outline-none" 
               />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Contact Phone</label>
               <input 
-                type="text" 
+                type="text"
+                readOnly
                 value={settingsForm.contact_phone}
-                onChange={(e) => setSettingsForm({ ...settingsForm, contact_phone: e.target.value })}
-                className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950" 
+                className="flex h-10 w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500 cursor-not-allowed focus-visible:outline-none" 
               />
             </div>
           </div>
@@ -472,18 +472,17 @@ export default function Letters() {
           <div className="space-y-2">
             <label className="text-sm font-medium">Contact Email</label>
             <input 
-              type="email" 
+              type="email"
+              readOnly
               value={settingsForm.contact_email}
-              onChange={(e) => setSettingsForm({ ...settingsForm, contact_email: e.target.value })}
-              className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950" 
+              className="flex h-10 w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500 cursor-not-allowed focus-visible:outline-none" 
             />
           </div>
 
           <div className="flex justify-end gap-3 pt-2">
-            <Button type="button" variant="outline" onClick={() => setIsSettingsModalOpen(false)}>Cancel</Button>
-            <Button type="submit">Save Changes</Button>
+            <Button type="button" variant="outline" onClick={() => setIsSettingsModalOpen(false)}>Close</Button>
           </div>
-        </form>
+        </div>
       </Modal>
     </div>
   )
