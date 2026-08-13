@@ -1,199 +1,173 @@
+import React from 'react'
 import { useAuth } from '../context/AuthContext'
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
-import { Badge } from "../components/ui/badge"
-import { Progress } from "../components/ui/progress"
-import { formatCurrency, formatFullCurrency } from "../data/mock"
-import { TrendingUp, CreditCard, FolderKanban, IndianRupee, Plus, BookOpen } from "lucide-react"
-import { useData } from "../context/DataContext"
-import { Modal } from "../components/ui/modal"
-import { Button } from "../components/ui/button"
-import React, { useState } from "react"
+import { useData } from '../context/DataContext'
+import { useNavigate } from 'react-router-dom'
+import { ArrowRight, Building2, CheckSquare, Users, FileText, Handshake, ArrowRightLeft, BookOpen } from 'lucide-react'
 
 export default function Dashboard() {
   const { user } = useAuth()
-  const { clients, projects, transactions, people, addTransaction, addClient, addProject, categories, addCategory, companyInfo } = useData()
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const [txType, setTxType] = useState('Expense')
-  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false)
-  const [txProject, setTxProject] = useState(projects[0]?.id || '')
+  const { companyInfo } = useData()
+  const navigate = useNavigate()
 
-  const getPaymentMethods = () => {
-    if (companyInfo?.payment_methods) {
-      return companyInfo.payment_methods
-        .split(',')
-        .map(m => m.trim())
-        .filter(m => m.length > 0);
+  const hour = new Date().getHours()
+  const greeting = hour < 12 ? 'Good Morning' : hour < 18 ? 'Good Afternoon' : 'Good Evening'
+
+  const userName = companyInfo?.admin_name ? companyInfo.admin_name.split(' ')[0] : 'User'
+
+  const cards = [
+    {
+      title: 'Clients',
+      description: 'Manage client details and communications',
+      icon: Users,
+      link: '/clients',
+      imgSrc: 'https://images.unsplash.com/photo-1573164713988-8665fc963095?auto=format&fit=crop&q=80&w=500',
+      color: 'text-blue-500',
+      bgColor: 'bg-blue-50',
+      borderColor: 'border-blue-100'
+    },
+    {
+      title: 'My Projects',
+      description: 'View and manage all your ongoing projects',
+      icon: Building2,
+      link: '/projects',
+      imgSrc: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=500',
+      color: 'text-orange-500',
+      bgColor: 'bg-orange-50',
+      borderColor: 'border-orange-100'
+    },
+    {
+      title: 'Transactions',
+      description: 'Record and track all your income and expenses',
+      icon: ArrowRightLeft,
+      link: '/transactions',
+      imgSrc: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&q=80&w=500',
+      color: 'text-green-500',
+      bgColor: 'bg-green-50',
+      borderColor: 'border-green-100'
+    },
+    {
+      title: 'Invoices',
+      description: 'Create, send and track your sales invoices',
+      icon: FileText,
+      link: '/sales',
+      imgSrc: 'https://images.unsplash.com/photo-1586281380349-632531db7ed4?auto=format&fit=crop&q=80&w=500',
+      color: 'text-purple-500',
+      bgColor: 'bg-purple-50',
+      borderColor: 'border-purple-100'
+    },
+    {
+      title: 'Ledger Book',
+      description: 'View detailed account statements and balances',
+      icon: BookOpen,
+      link: '/ledger',
+      imgSrc: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&q=80&w=500',
+      color: 'text-rose-500',
+      bgColor: 'bg-rose-50',
+      borderColor: 'border-rose-100'
     }
-    return ["Net Banking", "UPI", "Cash"];
-  };
-
-  const selectedProjectDetails = projects.find(p => p.name === txProject)
-  
-  const projectsWithMetrics = projects.map(p => {
-    const pTxs = transactions.filter(t => t.project_id === p.id || t.project === p.name);
-    const received = pTxs.filter(t => t.type === 'Income').reduce((sum, t) => sum + Number(t.amount), 0);
-    const expenses = pTxs.filter(t => t.type === 'Expense').reduce((sum, t) => sum + Number(t.amount), 0);
-    const progress = p.budget > 0 ? Math.min(100, Math.round((expenses / p.budget) * 100)) : 0;
-    return { ...p, received, expenses, progress };
-  });
-
-  const recentProjects = projectsWithMetrics.slice(0, 3)
-  const recentTransactions = transactions.slice(0, 5)
-
-  const handleSubmit = (e) => {
-    e.preventDefault()
-    const formData = new FormData(e.target)
-    addTransaction({
-      type: formData.get('type'),
-      project_id: formData.get('project_id'),
-      category_id: formData.get('category_id'),
-      party_id: formData.get('party_id'),
-      amount: formData.get('amount'),
-      paymentMethod: formData.get('paymentMethod'),
-      date: formData.get('date'),
-      description: formData.get('narration')
-    })
-    setIsModalOpen(false)
-  }
+  ]
 
   return (
-    <div className="space-y-6 min-h-[calc(100vh-4rem)] -m-4 p-4 md:-m-8 md:p-8 bg-gradient-to-br from-blue-50 via-indigo-50 to-yellow-50 flex flex-col">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-3xl font-extrabold tracking-tight text-slate-800">Dashboard</h2>
+    <div className="min-h-[calc(100vh-4rem)] p-4 md:p-6 bg-slate-50 flex flex-col gap-4 md:gap-6 overflow-hidden">
+      {/* Header Greeting */}
+      <div className="flex justify-between items-start sm:items-center gap-4">
+        <div>
+          <h2 className="text-xs md:text-sm text-indigo-600 font-bold uppercase tracking-widest mb-1">{companyInfo?.company_name || 'Finance Manager'}</h2>
+          <h1 className="text-2xl md:text-3xl font-bold text-slate-800 flex items-center gap-2">
+            {greeting}, {userName}! <span className="animate-wave origin-bottom-right inline-block">👋</span>
+          </h1>
+          <p className="text-slate-500 mt-0.5 text-sm">Let's build something amazing today.</p>
+        </div>
+        
+        <div className="shrink-0 bg-white p-2 sm:p-4 rounded-xl shadow-sm border border-slate-100 mt-1 sm:mt-0">
+          {companyInfo?.logo_url ? (
+            <img src={companyInfo.logo_url} alt="Company Logo" className="h-16 sm:h-24 w-auto object-contain max-w-[240px]" crossOrigin="anonymous" />
+          ) : (
+            <img src="/logo.png" alt="Company Logo" className="h-16 sm:h-24 w-auto object-contain max-w-[240px]" onError={(e) => { e.target.style.display = 'none' }} />
+          )}
+        </div>
       </div>
 
-      {companyInfo ? (
-        <div className="flex-1 bg-gradient-to-br from-blue-600 via-blue-500 to-yellow-500 rounded-3xl p-8 md:p-24 shadow-2xl border border-blue-400 relative overflow-hidden transform transition-all hover:scale-[1.01] flex items-center justify-center">
-          <div className="absolute top-0 right-0 -mt-10 -mr-10 w-72 h-72 bg-white opacity-20 rounded-full blur-3xl"></div>
-          <div className="absolute bottom-0 left-0 -mb-10 -ml-10 w-56 h-56 bg-yellow-200 opacity-30 rounded-full blur-2xl"></div>
-          
-          <div className="relative z-10 flex flex-col md:flex-row items-center gap-8 text-center md:text-left">
-            {companyInfo.logo_url ? (
-              <div className="relative group mix-blend-multiply">
-                <img src={companyInfo.logo_url} alt="Logo" className="relative w-36 h-36 md:w-40 md:h-40 object-contain transform transition duration-500 group-hover:scale-105" />
-              </div>
-            ) : (
-              <div className="w-36 h-36 md:w-40 md:h-40 rounded-3xl border-4 border-white/40 shadow-2xl bg-white/20 backdrop-blur-sm text-white flex items-center justify-center text-7xl font-black">
-                {companyInfo.company_name?.charAt(0) || 'C'}
-              </div>
-            )}
-            <div className="flex-1">
-              <h1 className="text-5xl md:text-7xl font-black tracking-tight mb-6 text-white drop-shadow-md">{companyInfo.company_name}</h1>
-              <div className="inline-block bg-white/20 backdrop-blur-md px-6 py-2 rounded-full border border-white/30 shadow-sm">
-                <p className="text-blue-50 text-xl font-medium">Managed by <span className="text-white font-extrabold">{companyInfo.admin_name}</span></p>
-              </div>
-            </div>
+      {/* Hero Banner */}
+      <div className="relative w-full h-[180px] md:h-[220px] rounded-3xl overflow-hidden shadow-lg group shrink-0">
+        <img 
+          src="https://images.unsplash.com/photo-1503387762-592deb58ef4e?auto=format&fit=crop&q=80&w=1600" 
+          alt="Construction Site" 
+          className="absolute inset-0 w-full h-full object-cover scale-150 origin-left group-hover:scale-[1.55] transition-transform duration-700"
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-900/90 via-slate-900/60 to-transparent"></div>
+        
+        <div className="absolute inset-0 flex flex-col justify-center px-8 md:px-12 w-full md:w-2/3">
+          <h2 className="text-2xl md:text-4xl font-black text-white mb-2 md:mb-4 leading-tight drop-shadow-md">
+            Streamline Your<br/>
+            <span className="text-yellow-400">Construction Projects.</span>
+          </h2>
+          <p className="text-slate-200 text-xs md:text-sm max-w-sm drop-shadow hidden sm:block">
+            Track progress, manage finances, and oversee your entire team from one unified dashboard.
+          </p>
+          <div className="mt-3 md:mt-4">
+            <div className="w-12 md:w-16 h-1 bg-yellow-400 rounded-full shadow-[0_0_10px_rgba(250,204,21,0.5)]"></div>
           </div>
         </div>
-      ) : (
-        <div className="flex-1 bg-gradient-to-r from-blue-600 via-blue-500 to-yellow-500 rounded-3xl p-10 shadow-2xl relative overflow-hidden flex flex-col justify-center items-center text-center">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-20 rounded-full blur-3xl"></div>
-          <h1 className="text-5xl md:text-7xl font-black tracking-tight mb-3 relative z-10 text-white">Welcome to FinManager</h1>
-          <p className="text-blue-100 text-xl font-medium relative z-10">Here's an overview of your business.</p>
-        </div>
-      )}
+      </div>
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Add Transaction">
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Date</label>
-              <input name="date" type="date" required defaultValue={new Date().toISOString().split('T')[0]} className="flex h-10 w-full rounded-md border border-slate-200 px-3 text-sm" />
+      {/* Navigation Cards Grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-4 md:gap-6 pt-2 flex-1 items-start">
+        {cards.map((card, idx) => {
+          const isClickable = user?.role !== 'USER';
+          return (
+            <div 
+              key={idx}
+              onClick={() => isClickable && navigate(card.link)} 
+              className={`bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-full ${
+                isClickable 
+                  ? 'hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer group' 
+                  : 'opacity-95'
+              }`}
+            >
+              <div className="h-20 md:h-24 w-full overflow-hidden relative shrink-0">
+                <img 
+                  src={card.imgSrc} 
+                  alt={card.title} 
+                  className={`w-full h-full object-cover ${isClickable ? 'group-hover:scale-110 transition-transform duration-700' : ''}`} 
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-60"></div>
+              </div>
+              
+              <div className="relative pt-6 md:pt-8 pb-3 px-3 text-center flex-1 flex flex-col bg-white">
+                <div className={`absolute -top-6 left-1/2 -translate-x-1/2 w-12 h-12 rounded-xl shadow-lg flex items-center justify-center ${card.bgColor} ${card.color} border ${card.borderColor} ${isClickable ? 'group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300' : ''} z-10`}>
+                  <card.icon className="w-5 h-5" />
+                </div>
+                
+                <h3 className="font-bold text-slate-800 text-sm md:text-base mb-1">{card.title}</h3>
+                <p className="text-[10px] md:text-xs text-slate-500 mb-2 flex-1 leading-relaxed px-1 hidden md:block">{card.description}</p>
+                
+                {isClickable && (
+                  <div className={`w-6 h-6 md:w-8 md:h-8 mx-auto mt-auto rounded-full ${card.bgColor} ${card.color} flex items-center justify-center group-hover:translate-x-1 group-hover:bg-slate-900 group-hover:text-white transition-all duration-300`}>
+                    <ArrowRight className="w-3 h-3 md:w-4 md:h-4" />
+                  </div>
+                )}
+              </div>
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Type</label>
-              <select name="type" className="flex h-10 w-full rounded-md border border-slate-200 px-3 text-sm" value={txType} onChange={(e) => setTxType(e.target.value)}>
-                <option value="Expense">Expense</option>
-                <option value="Income">Income</option>
-              </select>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Project</label>
-              <select name="project_id" className="flex h-10 w-full rounded-md border border-slate-200 px-3 text-sm" value={txProject} onChange={(e) => setTxProject(e.target.value)}>
-                {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-              </select>
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Amount (₹)</label>
-              <input name="amount" type="number" required className="flex h-10 w-full rounded-md border border-slate-200 px-3 text-sm" />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Category</label>
-              <select name="category_id" required className="flex h-10 w-full rounded-md border border-slate-200 px-3 text-sm" onChange={(e) => { if (e.target.value === "CREATE_NEW") { setIsCategoryModalOpen(true); e.target.value = ""; } }}>
-                <option value="">Select Category...</option>
-                {categories.filter(c => c.type === txType && !c.parent_id).map(parent => (
-                  <React.Fragment key={parent.id}>
-                    <option value={parent.id}>{parent.name}</option>
-                    {categories.filter(c => c.parent_id === parent.id).map(child => (
-                      <option key={child.id} value={child.id}>&nbsp;&nbsp;— {child.name}</option>
-                    ))}
-                  </React.Fragment>
-                ))}
-                <option value="CREATE_NEW" className="font-bold text-indigo-600">+ Create New Category</option>
-              </select>
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Payment Method</label>
-              <select name="paymentMethod" className="flex h-10 w-full rounded-md border border-slate-200 px-3 text-sm">
-                {getPaymentMethods().map(m => (
-                  <option key={m} value={m}>{m}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Narration (Optional)</label>
-            <textarea name="narration" rows="2" placeholder="Brief description of the transaction..." className="flex w-full rounded-md border border-slate-200 px-3 py-2 text-sm"></textarea>
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">{txType === 'Income' ? 'Received From (Client)' : 'Paid To (Subcontractor/Supplier)'}</label>
-            {txType === 'Income' ? (
-              <>
-                <input type="text" readOnly value={selectedProjectDetails?.client || ''} className="flex h-10 w-full rounded-md border border-slate-200 px-3 text-sm bg-slate-50 cursor-not-allowed" />
-                <input type="hidden" name="party_id" value={people.find(c => c.name === selectedProjectDetails?.client)?.id || ''} />
-              </>
-            ) : (
-              <select name="party_id" className="flex h-10 w-full rounded-md border border-slate-200 px-3 text-sm">
-                <option value="">Select Person...</option>
-                {people.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-              </select>
-            )}
-          </div>
-          <Button type="submit" className="w-full">Save Transaction</Button>
-        </form>
-      </Modal>
-
-      <Modal isOpen={isCategoryModalOpen} onClose={() => setIsCategoryModalOpen(false)} title="Create New Category">
-        <form onSubmit={async (e) => {
-          e.preventDefault();
-          const name = e.target.name.value;
-          const parent_id = e.target.parent_id.value || null;
-          await addCategory({ name, parent_id, type: txType, status: 'Active' });
-          setIsCategoryModalOpen(false);
-        }} className="space-y-4">
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Category Name</label>
-            <input name="name" required className="flex h-10 w-full rounded-md border border-slate-200 px-3 text-sm" />
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Parent Category (Optional)</label>
-            <select name="parent_id" className="flex h-10 w-full rounded-md border border-slate-200 px-3 text-sm">
-              <option value="">None (Top Level)</option>
-              {categories.filter(c => c.type === txType && !c.parent_id).map(c => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
-          </div>
-          <div className="flex justify-end gap-2 mt-6">
-            <Button type="button" variant="outline" onClick={() => setIsCategoryModalOpen(false)}>Cancel</Button>
-            <Button type="submit" className="bg-slate-900 hover:bg-slate-800 text-white">Create Category</Button>
-          </div>
-        </form>
-      </Modal>
+          )
+        })}
+      </div>
+      
+      <style dangerouslySetInnerHTML={{__html: `
+        @keyframes wave {
+          0% { transform: rotate(0.0deg) }
+          10% { transform: rotate(14.0deg) }
+          20% { transform: rotate(-8.0deg) }
+          30% { transform: rotate(14.0deg) }
+          40% { transform: rotate(-4.0deg) }
+          50% { transform: rotate(10.0deg) }
+          60% { transform: rotate(0.0deg) }
+          100% { transform: rotate(0.0deg) }
+        }
+        .animate-wave {
+          animation: wave 2.5s infinite;
+        }
+      `}} />
     </div>
   )
 }
