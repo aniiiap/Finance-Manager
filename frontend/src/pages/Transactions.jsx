@@ -156,7 +156,7 @@ export default function Transactions() {
     ...filteredTransactions.map(tx => ({
       "Date": new Date(tx.date).toLocaleDateString(),
       "Project": tx.project_name || tx.project,
-      "Party": tx.party_name || getPartyName(tx.party_id || tx.party),
+      "Party / Client": tx.party_name || getPartyName(tx.party_id || tx.party),
       "Narration": tx.description || tx.narration || '',
       "Category": getCategoryName(tx.category_id || tx.category),
       "Method": tx.paymentMethod || tx.payment_method || '',
@@ -166,7 +166,7 @@ export default function Transactions() {
     {
       "Date": "TOTAL",
       "Project": "",
-      "Party": "",
+      "Party / Client": "",
       "Narration": "",
       "Category": "",
       "Method": "",
@@ -185,7 +185,7 @@ export default function Transactions() {
         <div className="flex gap-2 w-full sm:w-auto flex-wrap">
           <ExportButtons 
             data={exportData} 
-            columns={["Date", "Project", "Party", "Narration", "Category", "Method", "Debit", "Credit"]}
+            columns={["Date", "Project", "Party / Client", "Narration", "Category", "Method", "Debit", "Credit"]}
             filename={`Transactions_${new Date().toISOString().split('T')[0]}`}
             title="Transactions Report"
           />
@@ -274,7 +274,7 @@ export default function Transactions() {
                   )}
                   <TableHead>Date</TableHead>
                   <TableHead>Project</TableHead>
-                  <TableHead>Party</TableHead>
+                  <TableHead>Party / Client</TableHead>
                   <TableHead>Narration</TableHead>
                   <TableHead>Category</TableHead>
                   <TableHead>Method</TableHead>

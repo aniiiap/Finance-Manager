@@ -105,7 +105,7 @@ export default function Ledger() {
     ...ledgerData.map(tx => ({
       "Date": new Date(tx.date).toLocaleDateString(),
       "Project": tx.project_name || tx.project,
-      "Party": tx.party_name || getPartyName(tx.party_id || tx.party),
+      "Party / Client": tx.party_name || getPartyName(tx.party_id || tx.party),
       "Narration": tx.narration || tx.description || '',
       "Category": getCategoryName(tx.category_id || tx.category),
       "Method": tx.paymentMethod || tx.payment_method || '',
@@ -116,7 +116,7 @@ export default function Ledger() {
     {
       "Date": "TOTAL",
       "Project": "",
-      "Party": "",
+      "Party / Client": "",
       "Narration": "",
       "Category": "",
       "Method": "",
@@ -146,7 +146,7 @@ export default function Ledger() {
           </div>
           <ExportButtons 
             data={exportData} 
-            columns={["Date", "Project", "Party", "Narration", "Category", "Method", "Credit", "Debit", "Balance"]}
+            columns={["Date", "Project", "Party / Client", "Narration", "Category", "Method", "Credit", "Debit", "Balance"]}
             filename={`Ledger_${new Date().toISOString().split('T')[0]}`}
             title="Ledger Statement"
           />
@@ -217,7 +217,7 @@ export default function Ledger() {
                 <TableRow>
                   <TableHead>Date</TableHead>
                   {selectedProject === "all" && <TableHead>Project</TableHead>}
-                  <TableHead>Particulars</TableHead>
+                  <TableHead>Party / Client</TableHead>
                   <TableHead>Category</TableHead>
                   <TableHead>Method</TableHead>
                   <TableHead className="text-right text-green-600">Credit (In)</TableHead>
