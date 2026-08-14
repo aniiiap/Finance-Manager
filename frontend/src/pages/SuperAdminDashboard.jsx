@@ -97,7 +97,7 @@ export default function SuperAdminDashboard() {
     const payload = {
       company_name: formData.get('company_name'),
       contact_name: formData.get('contact_name'),
-      contact_email: formData.get('contact_email'),
+      admin_email: formData.get('admin_email'),
       contact_phone: formData.get('contact_phone')
     }
     
@@ -251,7 +251,7 @@ export default function SuperAdminDashboard() {
                     <TableCell>
                       <div className="flex flex-col">
                         <span className="font-bold text-slate-900">{c.name}</span>
-                        <span className="text-xs text-slate-500">{c.contact_email}</span>
+                        <span className="text-xs text-slate-500">{c.admin_email}</span>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -350,7 +350,7 @@ export default function SuperAdminDashboard() {
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Admin Email (Login ID)</label>
-            <input name="contact_email" type="email" defaultValue={companyToEdit?.contact_email} required className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600" />
+            <input name="admin_email" type="email" defaultValue={companyToEdit?.admin_email} required className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600" />
             <p className="text-xs text-amber-600 mt-1">Warning: Changing this email will change the admin's login credentials.</p>
           </div>
           <div>

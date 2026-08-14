@@ -392,7 +392,8 @@ router.get('/companies', verifyToken, async (req, res) => {
     const result = await pool.query(`
       SELECT c.*, 
         (SELECT COUNT(*) FROM users u WHERE u.company_id = c.id) as users_count,
-        (SELECT phone FROM users u WHERE u.company_id = c.id AND u.role = 'ADMIN' LIMIT 1) as contact_phone
+        (SELECT phone FROM users u WHERE u.company_id = c.id AND u.role = 'ADMIN' LIMIT 1) as contact_phone,
+        (SELECT email FROM users u WHERE u.company_id = c.id AND u.role = 'ADMIN' LIMIT 1) as admin_email
       FROM companies c
       ORDER BY c.created_at DESC
     `);
@@ -435,19 +436,19 @@ router.put('/companies/:id', verifyToken, verifyAdmin, async (req, res) => {
   const client = await pool.connect();
   try {
     const { id } = req.params;
-    const { company_name, contact_name, contact_email, contact_phone } = req.body;
+    const { company_name, contact_name, admin_email, contact_phone } = req.body;
     await client.query('BEGIN');
     
-    // Update company details
+    // Update company details (contact_email is managed separately in Company Profile Settings)
     await client.query(
-      'UPDATE companies SET name = $1, contact_name = $2, contact_email = $3 WHERE id = $4',
-      [company_name, contact_name, contact_email, id]
+      'UPDATE companies SET name = $1, contact_name = $2 WHERE id = $3',
+      [company_name, contact_name, id]
     );
 
     // Also update the main admin user's name, email, and phone for this company so they don't lose login access
     await client.query(
       "UPDATE users SET name = $1, email = $2, phone = $3 WHERE company_id = $4 AND role = 'ADMIN'",
-      [contact_name, contact_email, contact_phone, id]
+      [contact_name, admin_email, contact_phone, id]
     );
 
     await client.query('COMMIT');
