@@ -58,7 +58,7 @@ export default function LetterTemplate({ letter }) {
         </div>
 
         {/* Letter Content */}
-        <div className="px-4 text-base leading-relaxed whitespace-pre-wrap quill-content" dangerouslySetInnerHTML={{ __html: letter.content }} style={{ minHeight: '150mm' }}>
+        <div className="px-4 text-base leading-relaxed whitespace-pre-wrap break-words quill-content" dangerouslySetInnerHTML={{ __html: letter.content }} style={{ minHeight: '150mm' }}>
         </div>
 
       </div>
