@@ -22,7 +22,7 @@ export default function Letters() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [letterToDelete, setLetterToDelete] = useState(null)
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false)
-  const { companyInfo, updateCompanyInfo } = useData()
+  const { letterProfile, updateLetterProfile } = useData()
 
   const [settingsForm, setSettingsForm] = useState({
     company_name: '', address: '', gstin: '', contact_email: '', contact_phone: ''
@@ -30,18 +30,18 @@ export default function Letters() {
 
   const handleSettingsClick = () => {
     setSettingsForm({
-      company_name: companyInfo?.company_name || '',
-      address: companyInfo?.address || '',
-      gstin: companyInfo?.gstin || '',
-      contact_email: companyInfo?.contact_email || '',
-      contact_phone: companyInfo?.contact_phone || ''
+      company_name: letterProfile?.company_name || '',
+      address: letterProfile?.address || '',
+      gstin: letterProfile?.gstin || '',
+      contact_email: letterProfile?.contact_email || '',
+      contact_phone: letterProfile?.contact_phone || ''
     })
     setIsSettingsModalOpen(true)
   }
 
   const handleSettingsSubmit = async (e) => {
     e.preventDefault()
-    const success = await updateCompanyInfo(settingsForm)
+    const success = await updateLetterProfile(settingsForm)
     if (success) setIsSettingsModalOpen(false)
   }
   

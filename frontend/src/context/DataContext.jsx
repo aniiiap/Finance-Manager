@@ -17,6 +17,7 @@ export const DataProvider = ({ children }) => {
   const [clients, setClients] = useState([]);
   const [users, setUsers] = useState([]);
   const [companyInfo, setCompanyInfo] = useState(null);
+  const [letterProfile, setLetterProfile] = useState(null);
   const [inventoryItems, setInventoryItems] = useState([]);
   const [inventoryTransactions, setInventoryTransactions] = useState([]);
   const [letters, setLetters] = useState([]);
@@ -34,13 +35,14 @@ export const DataProvider = ({ children }) => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [projRes, txRes, catRes, clientsRes, usersRes, companyInfoRes, invItemsRes, invTxsRes, lettersRes] = await Promise.all([
+      const [projRes, txRes, catRes, clientsRes, usersRes, companyInfoRes, letterProfileRes, invItemsRes, invTxsRes, lettersRes] = await Promise.all([
         apiFetch('/api/data/projects'),
         apiFetch('/api/data/transactions'),
         apiFetch('/api/data/categories'),
         apiFetch('/api/data/people'),
         user && user.role === 'ADMIN' ? apiFetch('/api/data/users').catch(() => ({ ok: false })) : Promise.resolve({ ok: false }),
         apiFetch('/api/data/company-info').catch(() => ({ ok: false })),
+        apiFetch('/api/data/letter-profile').catch(() => ({ ok: false })),
         apiFetch('/api/data/inventory/items').catch(() => ({ ok: false })),
         apiFetch('/api/data/inventory/transactions').catch(() => ({ ok: false })),
         apiFetch('/api/letters').catch(() => ({ ok: false }))
@@ -113,6 +115,7 @@ export const DataProvider = ({ children }) => {
 
       if (usersRes.ok) setUsers(await usersRes.json());
       if (companyInfoRes.ok) setCompanyInfo(await companyInfoRes.json());
+      if (letterProfileRes && letterProfileRes.ok) setLetterProfile(await letterProfileRes.json());
       if (invItemsRes.ok) setInventoryItems(await invItemsRes.json());
       if (invTxsRes.ok) setInventoryTransactions(await invTxsRes.json());
       if (lettersRes.ok) setLetters(await lettersRes.json());
@@ -617,6 +620,27 @@ export const DataProvider = ({ children }) => {
     }
   };
 
+  const updateLetterProfile = async (info) => {
+    try {
+      const res = await apiFetch('/api/data/letter-profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(info)
+      });
+      if (res.ok) {
+        fetchData();
+        toast("Letterhead profile updated successfully!", "success");
+        return true;
+      }
+      toast("Failed to update letterhead profile", "error");
+      return false;
+    } catch (err) {
+      console.error(err);
+      toast("Error updating letterhead profile", "error");
+      return false;
+    }
+  };
+
   return (
     <DataContext.Provider value={{ 
       projects, 
@@ -626,6 +650,7 @@ export const DataProvider = ({ children }) => {
       people: clients,
       users,
       companyInfo,
+      letterProfile,
       inventoryItems,
       inventoryTransactions,
       loading, 
@@ -658,6 +683,7 @@ export const DataProvider = ({ children }) => {
       deleteLetter,
       bulkDelete,
       updateCompanyInfo,
+      updateLetterProfile,
       refreshData: fetchData 
     }}>
       {children}

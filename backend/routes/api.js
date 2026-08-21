@@ -466,7 +466,7 @@ router.get('/companies/:id/settings', verifyToken, verifyAdmin, async (req, res)
   if (req.user.role !== 'SUPER_ADMIN') return res.status(403).json({ error: 'Forbidden' });
   try {
     const { id } = req.params;
-    const result = await pool.query('SELECT name, address, gstin, state_name, state_code, bank_name, bank_account_no, bank_ifsc, authorised_signatory, payment_methods, logo_url, signature_url, contact_name, contact_email FROM companies WHERE id = $1', [id]);
+    const result = await pool.query('SELECT name, address, gstin, state_name, state_code, bank_name, bank_account_no, bank_ifsc, authorised_signatory, payment_methods, logo_url, signature_url, contact_name, contact_email, letter_head_name, letter_head_address, letter_head_gstin, letter_head_email, letter_head_phone, letter_signature_url FROM companies WHERE id = $1', [id]);
     if (result.rows.length === 0) return res.status(404).json({ error: 'Company not found' });
     
     // Also fetch admin email and contact phone from users table
@@ -488,12 +488,12 @@ router.put('/companies/:id/settings', verifyToken, verifyAdmin, async (req, res)
   if (req.user.role !== 'SUPER_ADMIN') return res.status(403).json({ error: 'Forbidden' });
   try {
     const { id } = req.params;
-    const { name = '', address = '', gstin = '', state_name = '', state_code = '', bank_name = '', bank_account_no = '', bank_ifsc = '', authorised_signatory = '', payment_methods = '', contact_name = '', contact_email = '', admin_email = '', contact_phone = '' } = req.body;
+    const { name = '', address = '', gstin = '', state_name = '', state_code = '', bank_name = '', bank_account_no = '', bank_ifsc = '', authorised_signatory = '', payment_methods = '', contact_name = '', contact_email = '', admin_email = '', contact_phone = '', letter_head_name = '', letter_head_address = '', letter_head_gstin = '', letter_head_email = '', letter_head_phone = '' } = req.body;
     await pool.query(
       `UPDATE companies 
-       SET name = COALESCE(NULLIF($1, ''), name), address = $2, gstin = $3, state_name = $4, state_code = $5, bank_name = $6, bank_account_no = $7, bank_ifsc = $8, authorised_signatory = $9, payment_methods = $10, contact_name = $11, contact_email = $12
+       SET name = COALESCE(NULLIF($1, ''), name), address = $2, gstin = $3, state_name = $4, state_code = $5, bank_name = $6, bank_account_no = $7, bank_ifsc = $8, authorised_signatory = $9, payment_methods = $10, contact_name = $11, contact_email = $12, letter_head_name = $14, letter_head_address = $15, letter_head_gstin = $16, letter_head_email = $17, letter_head_phone = $18
        WHERE id = $13`,
-      [name, address, gstin, state_name, state_code, bank_name, bank_account_no, bank_ifsc, authorised_signatory, payment_methods, contact_name, contact_email, id]
+      [name, address, gstin, state_name, state_code, bank_name, bank_account_no, bank_ifsc, authorised_signatory, payment_methods, contact_name, contact_email, id, letter_head_name, letter_head_address, letter_head_gstin, letter_head_email, letter_head_phone]
     );
     
     if (contact_name || admin_email || contact_phone) {
@@ -528,6 +528,16 @@ router.post('/companies/:id/upload-signature', verifyToken, verifyAdmin, upload.
     const base64Data = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
     await pool.query('UPDATE companies SET signature_url = $1 WHERE id = $2', [base64Data, req.params.id]);
     res.json({ success: true, signature_url: base64Data });
+  } catch(e) { res.status(500).json({error: 'Server error'}); }
+});
+
+router.post('/companies/:id/upload-letter-signature', verifyToken, verifyAdmin, upload.single('file'), async (req, res) => {
+  if (req.user.role !== 'SUPER_ADMIN') return res.status(403).json({ error: 'Forbidden' });
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No file provided' });
+    const base64Data = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+    await pool.query('UPDATE companies SET letter_signature_url = $1 WHERE id = $2', [base64Data, req.params.id]);
+    res.json({ success: true, letter_signature_url: base64Data });
   } catch(e) { res.status(500).json({error: 'Server error'}); }
 });
 
@@ -700,6 +710,48 @@ router.post('/company-info/upload-signature', verifyToken, verifyAdmin, upload.s
     if (!req.file) return res.status(400).json({ error: 'No file provided' });
     const base64Data = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
     await pool.query('UPDATE companies SET signature_url = $1 WHERE id = $2', [base64Data, req.user.company_id]);
+    res.json({ success: true, signature_url: base64Data });
+  } catch(e) { res.status(500).json({error: 'Server error'}); }
+});
+
+router.get('/letter-profile', verifyToken, async (req, res) => {
+  try {
+    if (!req.user.company_id) return res.json(null);
+    const result = await pool.query(`
+      SELECT letter_head_name as company_name, letter_head_address as address, 
+             letter_head_gstin as gstin, letter_head_email as contact_email, 
+             letter_head_phone as contact_phone, letter_signature_url as signature_url
+      FROM companies
+      WHERE id = $1 LIMIT 1
+    `, [req.user.company_id]);
+    res.json(result.rows[0]);
+  } catch(e) { res.status(500).json({error: 'Server error'}); }
+});
+
+router.put('/letter-profile', verifyToken, async (req, res) => {
+  try {
+    const { company_name, address, gstin, contact_email, contact_phone } = req.body;
+    await pool.query(
+      `UPDATE companies SET 
+         letter_head_name = $1, 
+         letter_head_address = $2, 
+         letter_head_gstin = $3, 
+         letter_head_email = $4,
+         letter_head_phone = $5
+       WHERE id = $6`,
+      [company_name, address, gstin, contact_email, contact_phone, req.user.company_id]
+    );
+    res.json({ success: true });
+  } catch(e) { 
+    res.status(500).json({error: 'Server error'}); 
+  }
+});
+
+router.post('/letter-profile/upload-signature', verifyToken, verifyAdmin, upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No file provided' });
+    const base64Data = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+    await pool.query('UPDATE companies SET letter_signature_url = $1 WHERE id = $2', [base64Data, req.user.company_id]);
     res.json({ success: true, signature_url: base64Data });
   } catch(e) { res.status(500).json({error: 'Server error'}); }
 });

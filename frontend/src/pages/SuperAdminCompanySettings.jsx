@@ -26,7 +26,13 @@ export default function SuperAdminCompanySettings() {
     admin_email: "",
     contact_phone: "",
     logo_url: "",
-    signature_url: ""
+    signature_url: "",
+    letter_head_name: "",
+    letter_head_address: "",
+    letter_head_gstin: "",
+    letter_head_email: "",
+    letter_head_phone: "",
+    letter_signature_url: ""
   })
   
   const [isLoading, setIsLoading] = useState(false)
@@ -35,8 +41,10 @@ export default function SuperAdminCompanySettings() {
 
   const [logoFile, setLogoFile] = useState(null)
   const [signatureFile, setSignatureFile] = useState(null)
+  const [letterSignatureFile, setLetterSignatureFile] = useState(null)
   const [isUploadingLogo, setIsUploadingLogo] = useState(false)
   const [isUploadingSignature, setIsUploadingSignature] = useState(false)
+  const [isUploadingLetterSignature, setIsUploadingLetterSignature] = useState(false)
 
   const fetchSettings = async () => {
     setIsFetching(true)
@@ -61,7 +69,13 @@ export default function SuperAdminCompanySettings() {
             admin_email: data.admin_email || "",
             contact_phone: data.contact_phone || "",
             logo_url: data.logo_url || "",
-            signature_url: data.signature_url || ""
+            signature_url: data.signature_url || "",
+            letter_head_name: data.letter_head_name || "",
+            letter_head_address: data.letter_head_address || "",
+            letter_head_gstin: data.letter_head_gstin || "",
+            letter_head_email: data.letter_head_email || "",
+            letter_head_phone: data.letter_head_phone || "",
+            letter_signature_url: data.letter_signature_url || ""
           })
         }
       }
@@ -81,7 +95,7 @@ export default function SuperAdminCompanySettings() {
     setIsLoading(true)
     setMessage("")
     try {
-      const { logo_url, signature_url, ...payload } = settings;
+      const { logo_url, signature_url, letter_signature_url, ...payload } = settings;
       const res = await apiFetch(`/api/data/companies/${id}/settings`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -148,6 +162,30 @@ export default function SuperAdminCompanySettings() {
       console.error(err)
     } finally {
       setIsUploadingSignature(false)
+    }
+  }
+
+    const handleUploadLetterSignature = async () => {
+    if (!letterSignatureFile) return
+    setIsUploadingLetterSignature(true)
+    const formData = new FormData()
+    formData.append('file', letterSignatureFile)
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/data/companies/${id}/upload-letter-signature`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+        body: formData
+      })
+      if (res.ok) {
+        fetchSettings()
+        setLetterSignatureFile(null)
+      } else {
+        alert('Upload failed')
+      }
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setIsUploadingLetterSignature(false)
     }
   }
 
@@ -219,6 +257,37 @@ export default function SuperAdminCompanySettings() {
                   {isUploadingSignature ? 'Uploading...' : 'Upload'}
                 </Button>
               </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Letterhead Profile (Letters Only)</CardTitle>
+          <CardDescription>This information is exclusively used for the Letters page.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-lg font-medium">Letterhead Signature</h3>
+              <p className="text-sm text-slate-500">Rendered at the bottom right of letters.</p>
+            </div>
+            {settings.letter_signature_url ? (
+              <div className="border rounded-md p-4 bg-slate-50 flex justify-center items-center h-32">
+                <img src={settings.letter_signature_url} alt="Letterhead Signature" className="max-h-full max-w-full object-contain" crossOrigin="anonymous" />
+              </div>
+            ) : (
+              <div className="border rounded-md p-4 bg-slate-50 flex justify-center items-center h-32 text-slate-400 text-sm">
+                No letter signature uploaded
+              </div>
+            )}
+            <div className="flex items-center gap-4">
+              <input type="file" accept="image/*" onChange={(e) => setLetterSignatureFile(e.target.files[0])} className="text-sm w-full border p-1.5 rounded-md" />
+              <Button onClick={handleUploadLetterSignature} disabled={!letterSignatureFile || isUploadingLetterSignature} size="sm" className="bg-purple-700 hover:bg-purple-800 text-white">
+                {isUploadingLetterSignature ? 'Uploading...' : 'Upload'}
+              </Button>
             </div>
           </div>
         </CardContent>
@@ -315,12 +384,44 @@ export default function SuperAdminCompanySettings() {
               <p className="text-xs text-slate-500">Provide a comma-separated list of payment methods.</p>
             </div>
 
+            </CardContent></Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Letterhead Details</CardTitle>
+            <CardDescription>Separate details for Letters page (does not affect Sales/Purchases).</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Letterhead Name</label>
+                <input type="text" name="letter_head_name" value={settings.letter_head_name} onChange={handleChange} className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-600" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Letterhead GSTIN</label>
+                <input type="text" name="letter_head_gstin" value={settings.letter_head_gstin} onChange={handleChange} className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-600" />
+              </div>
+              <div className="space-y-2 sm:col-span-2">
+                <label className="text-sm font-medium">Letterhead Address</label>
+                <textarea name="letter_head_address" value={settings.letter_head_address} onChange={handleChange} className="flex min-h-[80px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-600" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Letterhead Email</label>
+                <input type="email" name="letter_head_email" value={settings.letter_head_email} onChange={handleChange} className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-600" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Letterhead Phone</label>
+                <input type="tel" name="letter_head_phone" value={settings.letter_head_phone} onChange={handleChange} className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-600" />
+              </div>
+            </div>
+            
             {message && <p className={`text-sm font-medium ${message.includes('Error') || message.includes('Failed') ? 'text-red-600' : 'text-green-600'}`}>{message}</p>}
             <Button type="submit" disabled={isLoading} className="mt-4 bg-purple-700 hover:bg-purple-800 text-white">
-              {isLoading ? "Saving..." : "Save Invoice Settings"}
+              {isLoading ? "Saving..." : "Save All Settings"}
             </Button>
           </CardContent>
         </Card>
+
       </form>
     </div>
   )
