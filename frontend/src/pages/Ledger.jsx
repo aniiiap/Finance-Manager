@@ -16,6 +16,7 @@ export default function Ledger() {
   const [selectedProject, setSelectedProject] = useState("all")
   const [selectedParty, setSelectedParty] = useState("all")
   const [selectedClient, setSelectedClient] = useState("all")
+  const [selectedCategory, setSelectedCategory] = useState("all")
   const [searchQuery, setSearchQuery] = useState('')
   const [fromDate, setFromDate] = useState('')
   const [toDate, setToDate] = useState('')
@@ -67,6 +68,9 @@ export default function Ledger() {
   }
   if (selectedParty !== "all") {
     projectTransactions = projectTransactions.filter(t => getPartyName(t.party_id || t.party) === selectedParty)
+  }
+  if (selectedCategory !== "all") {
+    projectTransactions = projectTransactions.filter(t => getCategoryName(t.category_id || t.category) === selectedCategory)
   }
   if (fromDate) {
       projectTransactions = projectTransactions.filter(t => new Date(t.date) >= new Date(fromDate))
@@ -192,6 +196,17 @@ export default function Ledger() {
             >
               <option value="all">All Subcontractors & Suppliers</option>
               {suppliers.map(p => <option key={`p-${p.id}`} value={p.name}>{p.name}</option>)}
+            </select>
+          </div>
+          <div className="w-full">
+            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1 block">Filter by Category</label>
+            <select 
+              className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900"
+              value={selectedCategory} 
+              onChange={(e) => setSelectedCategory(e.target.value)}
+            >
+              <option value="all">All Categories</option>
+              {categories.map(c => <option key={`c-${c.id}`} value={c.name}>{c.name}</option>)}
             </select>
           </div>
         </div>

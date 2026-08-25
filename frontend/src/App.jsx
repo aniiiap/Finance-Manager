@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import Layout from './components/Layout'
 import Dashboard from './pages/Dashboard'
 import Clients from './pages/Clients'
+import Subcontractors from './pages/Subcontractors'
 import Projects from './pages/Projects'
 import ProjectDetail from './pages/ProjectDetail'
 import Transactions from './pages/Transactions'
@@ -68,6 +69,7 @@ function App() {
                   {/* Client Routes - Blocked for Super Admin */}
                   <Route index element={<ProtectedRoute requireClient={true}><Dashboard /></ProtectedRoute>} />
                   <Route path="clients" element={<ProtectedRoute requireClient={true} requireModule="Clients"><Clients /></ProtectedRoute>} />
+                  <Route path="subcontractors" element={<ProtectedRoute requireClient={true} requireModule="Clients"><Subcontractors /></ProtectedRoute>} />
                   <Route path="projects" element={<ProtectedRoute requireClient={true} requireModule="Projects"><Projects /></ProtectedRoute>} />
                   <Route path="projects/:id" element={<ProtectedRoute requireClient={true} requireModule="Projects"><ProjectDetail /></ProtectedRoute>} />
                   <Route path="transactions" element={<ProtectedRoute requireClient={true} requireModule="Transactions"><Transactions /></ProtectedRoute>} />

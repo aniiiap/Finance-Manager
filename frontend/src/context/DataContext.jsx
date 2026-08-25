@@ -512,6 +512,31 @@ export const DataProvider = ({ children }) => {
     }
   };
 
+  const updatePerson = async (id, personData) => {
+    try {
+      const nameString = JSON.stringify({ 
+        name: personData.name, 
+        role: personData.role,
+        workAssigned: personData.workAssigned,
+        project: personData.project
+      });
+      const res = await apiFetch(`/api/data/people/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: nameString, phone: '' })
+      });
+      if (res.ok) {
+        fetchData();
+        toast("Person updated successfully!", "success");
+      } else {
+        toast("Failed to update person", "error");
+      }
+    } catch (err) {
+      console.error(err);
+      toast("Error updating person", "error");
+    }
+  };
+
   const updateTransaction = async (id, tx) => {
     try {
       const res = await apiFetch(`/api/data/transactions/${id}`, {
@@ -673,6 +698,7 @@ export const DataProvider = ({ children }) => {
       updateClient,
       deleteClient,
       addPerson,
+      updatePerson,
       deletePerson: deleteClient,
       addUser,
       updateUser,

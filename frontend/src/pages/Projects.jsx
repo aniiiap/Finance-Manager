@@ -299,7 +299,7 @@ export default function Projects() {
             <label className="block text-sm font-medium mb-1">Client</label>
             <select name="client_id" required className="w-full border rounded-md p-2">
               <option value="">Select a client</option>
-              {clients.map(c => (
+              {clients.filter(c => c.role !== 'SUBCONTRACTOR').map(c => (
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
             </select>
@@ -334,7 +334,7 @@ export default function Projects() {
               <label className="block text-sm font-medium mb-1">Client</label>
               <select name="client_id" defaultValue={projectToEdit.client_id} required className="w-full border rounded-md p-2">
                 <option value="">Select a client</option>
-                {clients.map(c => (
+                {clients.filter(c => c.role !== 'SUBCONTRACTOR').map(c => (
                   <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
               </select>

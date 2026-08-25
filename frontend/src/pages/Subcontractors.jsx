@@ -11,13 +11,13 @@ import { Pagination } from "../components/ui/pagination"
 import { Plus, Trash2, Edit2, Search } from "lucide-react"
 import { useAuth } from "../context/AuthContext"
 
-export default function Clients() {
+export default function Subcontractors() {
   const { user } = useAuth()
-  const { clients, projects, addClient, updateClient, deleteClient, bulkDelete } = useData()
+  const { people: subcontractors, projects, addPerson: addSubcontractor, updatePerson: updateSubcontractor, deletePerson: deleteSubcontractor, bulkDelete } = useData()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
-  const [clientToEdit, setClientToEdit] = useState(null)
-  const [clientToDelete, setClientToDelete] = useState(null)
+  const [subcontractorToEdit, setSubcontractorToEdit] = useState(null)
+  const [subcontractorToDelete, setSubcontractorToDelete] = useState(null)
 
   // Filters & Bulk Delete
   const [searchTerm, setSearchTerm] = useState('')
@@ -29,10 +29,11 @@ export default function Clients() {
   const handleSubmit = (e) => {
     e.preventDefault()
     const formData = new FormData(e.target)
-    addClient({
+    addSubcontractor({
       name: formData.get('name'),
       company: formData.get('company'),
       budget: formData.get('budget'),
+      role: 'SUBCONTRACTOR',
       status: 'Active'
     })
     setIsModalOpen(false)
@@ -41,45 +42,46 @@ export default function Clients() {
   const handleEditSubmit = (e) => {
     e.preventDefault()
     const formData = new FormData(e.target)
-    updateClient(clientToEdit.id, {
+    updateSubcontractor(subcontractorToEdit.id, {
       name: formData.get('name'),
       company: formData.get('company'),
       budget: formData.get('budget'),
+      role: 'SUBCONTRACTOR',
       status: 'Active'
     })
     setIsEditModalOpen(false)
-    setClientToEdit(null)
+    setSubcontractorToEdit(null)
   }
 
-  const filteredClients = clients.filter(client => {
-    if (client.role === 'SUBCONTRACTOR') return false;
+  const filteredSubcontractors = subcontractors.filter(subcontractor => {
+    if (subcontractor.role !== 'SUBCONTRACTOR') return false;
     const q = searchTerm.toLowerCase();
-    const matchesSearch = (client.name || '').toLowerCase().includes(q) || 
-                          (client.company || '').toLowerCase().includes(q) ||
-                          (client.phone || '').toLowerCase().includes(q);
+    const matchesSearch = (subcontractor.name || '').toLowerCase().includes(q) || 
+                          (subcontractor.company || '').toLowerCase().includes(q) ||
+                          (subcontractor.phone || '').toLowerCase().includes(q);
     let matchesDate = true;
-    if (fromDate) matchesDate = matchesDate && new Date(client.created_at || client.updated_at || '') >= new Date(fromDate);
-    if (toDate) matchesDate = matchesDate && new Date(client.created_at || client.updated_at || '') <= new Date(toDate + 'T23:59:59');
+    if (fromDate) matchesDate = matchesDate && new Date(subcontractor.created_at || subcontractor.updated_at || '') >= new Date(fromDate);
+    if (toDate) matchesDate = matchesDate && new Date(subcontractor.created_at || subcontractor.updated_at || '') <= new Date(toDate + 'T23:59:59');
     return matchesSearch && matchesDate;
   });
 
   // Pagination logic
   const pageSize = 10;
-  const totalPages = Math.ceil(filteredClients.length / pageSize);
-  const paginatedClients = filteredClients.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const totalPages = Math.ceil(filteredSubcontractors.length / pageSize);
+  const paginatedSubcontractors = filteredSubcontractors.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, fromDate, toDate]);
 
   const handleBulkDelete = async () => {
-    if (!window.confirm(`Are you sure you want to delete ${selectedIds.length} clients?`)) return;
+    if (!window.confirm(`Are you sure you want to delete ${selectedIds.length} subcontractors?`)) return;
     const success = await bulkDelete('people', selectedIds);
     if (success) setSelectedIds([]);
   }
 
   const toggleSelectAll = (e) => {
-    if (e.target.checked) setSelectedIds(paginatedClients.map(c => c.id));
+    if (e.target.checked) setSelectedIds(paginatedSubcontractors.map(c => c.id));
     else setSelectedIds([]);
   }
 
@@ -87,13 +89,13 @@ export default function Clients() {
     setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
   }
 
-  const exportData = filteredClients.map(client => {
-    const clientProjects = projects.filter(p => p.client_id === client.id);
+  const exportData = filteredSubcontractors.map(subcontractor => {
+    const subcontractorProjects = projects.filter(p => p.subcontractor_id === subcontractor.id);
     return {
-      "Name": client.name,
-      "Company": client.company || '',
-      "Budget": client.budget ? parseFloat(client.budget).toFixed(2) : '-',
-      "Projects": clientProjects.length > 0 ? clientProjects.map(p => p.name).join(", ") : "-"
+      "Name": subcontractor.name,
+      "Company": subcontractor.company || '',
+      "Budget": subcontractor.budget ? parseFloat(subcontractor.budget).toFixed(2) : '-',
+      "Projects": subcontractorProjects.length > 0 ? subcontractorProjects.map(p => p.name).join(", ") : "-"
     };
   });
 
@@ -101,15 +103,15 @@ export default function Clients() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Clients</h2>
-          <p className="text-sm text-slate-500">Manage your client relationships.</p>
+          <h2 className="text-2xl font-bold tracking-tight">Subcontractors</h2>
+          <p className="text-sm text-slate-500">Manage your subcontractor relationships.</p>
         </div>
         <div className="flex gap-2 w-full sm:w-auto flex-wrap">
           <ExportButtons 
             data={exportData} 
             columns={["Name", "Company", "Budget", "Projects"]}
-            filename={`Clients_${new Date().toISOString().split('T')[0]}`}
-            title="Clients Report"
+            filename={`Subcontractors_${new Date().toISOString().split('T')[0]}`}
+            title="Subcontractors Report"
           />
           {selectedIds.length > 0 && user?.role === 'ADMIN' && (
             <Button variant="destructive" onClick={handleBulkDelete} className="gap-2">
@@ -117,10 +119,10 @@ export default function Clients() {
             </Button>
           )}
           <Button onClick={() => {
-            setClientToEdit(null)
+            setSubcontractorToEdit(null)
             setIsModalOpen(true)
           }} className="gap-2 w-full sm:w-auto">
-            <Plus className="w-4 h-4" /> Add Client
+            <Plus className="w-4 h-4" /> Add Subcontractor
           </Button>
         </div>
       </div>
@@ -130,7 +132,7 @@ export default function Clients() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
           <input 
             type="text" 
-            placeholder="Search clients, companies, or contacts..." 
+            placeholder="Search subcontractors, companies, or contacts..." 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-9 pr-4 py-2 border rounded-md text-sm"
@@ -143,7 +145,7 @@ export default function Clients() {
 
       <Card>
         <CardHeader>
-          <CardTitle>All Clients</CardTitle>
+          <CardTitle>All Subcontractors</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto w-full">
@@ -155,12 +157,12 @@ export default function Clients() {
                     <input 
                       type="checkbox" 
                       className="cursor-pointer rounded border-slate-300 w-4 h-4"
-                      checked={filteredClients.length > 0 && selectedIds.length === filteredClients.length}
+                      checked={filteredSubcontractors.length > 0 && selectedIds.length === filteredSubcontractors.length}
                       onChange={toggleSelectAll}
                     />
                   </TableHead>
                 )}
-                <TableHead>Client Name</TableHead>
+                <TableHead>Subcontractor Name</TableHead>
                 <TableHead>Company</TableHead>
                 <TableHead>Projects</TableHead>
                 <TableHead>Budget</TableHead>
@@ -168,32 +170,32 @@ export default function Clients() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {paginatedClients.length === 0 ? (
+              {paginatedSubcontractors.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={user?.role === 'ADMIN' ? 6 : 5} className="text-center py-8 text-slate-500">
-                    No clients found.
+                    No subcontractors found.
                   </TableCell>
                 </TableRow>
-              ) : paginatedClients.map((client) => {
-                const clientProjectsCount = projects.filter(p => p.client_id === client.id).length;
+              ) : paginatedSubcontractors.map((subcontractor) => {
+                const subcontractorProjectsCount = projects.filter(p => p.subcontractor_id === subcontractor.id).length;
                 return (
-                <TableRow key={client.id} className={selectedIds.includes(client.id) ? 'bg-rose-50/50' : 'hover:bg-indigo-50/20 transition-colors'}>
+                <TableRow key={subcontractor.id} className={selectedIds.includes(subcontractor.id) ? 'bg-rose-50/50' : 'hover:bg-indigo-50/20 transition-colors'}>
                   {user?.role === 'ADMIN' && (
                     <TableCell>
                       <input 
                         type="checkbox" 
                         className="cursor-pointer rounded border-slate-300 w-4 h-4"
-                        checked={selectedIds.includes(client.id)}
-                        onChange={() => toggleSelect(client.id)}
+                        checked={selectedIds.includes(subcontractor.id)}
+                        onChange={() => toggleSelect(subcontractor.id)}
                       />
                     </TableCell>
                   )}
-                  <TableCell className="font-medium">{client.name}</TableCell>
-                  <TableCell>{client.company || '--'}</TableCell>
+                  <TableCell className="font-medium">{subcontractor.name}</TableCell>
+                  <TableCell>{subcontractor.company || '--'}</TableCell>
                   <TableCell>
-                    {clientProjectsCount > 0 ? (
+                    {subcontractorProjectsCount > 0 ? (
                       <div className="flex flex-wrap gap-1">
-                        {projects.filter(p => p.client_id === client.id).map(p => (
+                        {projects.filter(p => p.subcontractor_id === subcontractor.id).map(p => (
                           <Badge key={p.id} variant="secondary">{p.name}</Badge>
                         ))}
                       </div>
@@ -201,13 +203,13 @@ export default function Clients() {
                       '--'
                     )}
                   </TableCell>
-                  <TableCell>{client.budget ? parseFloat(client.budget).toFixed(2) : '--'}</TableCell>
+                  <TableCell>{subcontractor.budget ? parseFloat(subcontractor.budget).toFixed(2) : '--'}</TableCell>
                   {user?.role === 'ADMIN' && (
                     <TableCell className="flex gap-3">
-                      <button onClick={() => { setClientToEdit(client); setIsEditModalOpen(true); }} className="text-indigo-400 hover:text-indigo-600 hover:scale-110 transition-all" title="Edit Client">
+                      <button onClick={() => { setSubcontractorToEdit(subcontractor); setIsEditModalOpen(true); }} className="text-indigo-400 hover:text-indigo-600 hover:scale-110 transition-all" title="Edit Subcontractor">
                         <Edit2 className="w-4 h-4" />
                       </button>
-                      <button onClick={() => setClientToDelete(client.id)} className="text-rose-400 hover:text-rose-600 hover:scale-110 transition-all" title="Delete Client">
+                      <button onClick={() => setSubcontractorToDelete(subcontractor.id)} className="text-rose-400 hover:text-rose-600 hover:scale-110 transition-all" title="Delete Subcontractor">
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </TableCell>
@@ -224,11 +226,11 @@ export default function Clients() {
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title="Create New Client"
+        title="Create New Subcontractor"
       >
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-1">Client Name</label>
+            <label className="block text-sm font-medium mb-1">Subcontractor Name</label>
             <input name="name" required className="w-full border rounded-md p-2" placeholder="E.g., John Doe" />
           </div>
           <div>
@@ -241,7 +243,7 @@ export default function Clients() {
           </div>
           <div className="flex justify-end gap-2 mt-6">
             <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>Cancel</Button>
-            <Button type="submit">Create Client</Button>
+            <Button type="submit">Create Subcontractor</Button>
           </div>
         </form>
       </Modal>
@@ -249,21 +251,21 @@ export default function Clients() {
       <Modal
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
-        title="Edit Client"
+        title="Edit Subcontractor"
       >
-        {clientToEdit && (
+        {subcontractorToEdit && (
           <form onSubmit={handleEditSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium mb-1">Client Name</label>
-              <input name="name" defaultValue={clientToEdit.name} required className="w-full border rounded-md p-2" />
+              <label className="block text-sm font-medium mb-1">Subcontractor Name</label>
+              <input name="name" defaultValue={subcontractorToEdit.name} required className="w-full border rounded-md p-2" />
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Company</label>
-              <input name="company" defaultValue={clientToEdit.company} className="w-full border rounded-md p-2" />
+              <input name="company" defaultValue={subcontractorToEdit.company} className="w-full border rounded-md p-2" />
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Budget</label>
-              <input name="budget" type="number" step="0.01" defaultValue={clientToEdit.budget} className="w-full border rounded-md p-2" />
+              <input name="budget" type="number" step="0.01" defaultValue={subcontractorToEdit.budget} className="w-full border rounded-md p-2" />
             </div>
             <div className="flex justify-end gap-2 mt-6">
               <Button type="button" variant="outline" onClick={() => setIsEditModalOpen(false)}>Cancel</Button>
@@ -274,14 +276,14 @@ export default function Clients() {
       </Modal>
 
       <ConfirmModal
-        isOpen={!!clientToDelete}
-        onClose={() => setClientToDelete(null)}
+        isOpen={!!subcontractorToDelete}
+        onClose={() => setSubcontractorToDelete(null)}
         onConfirm={() => {
-          deleteClient(clientToDelete)
-          setClientToDelete(null)
+          deleteSubcontractor(subcontractorToDelete)
+          setSubcontractorToDelete(null)
         }}
-        title="Delete Client"
-        message="Are you sure you want to delete this client? They will be moved to the recycle bin."
+        title="Delete Subcontractor"
+        message="Are you sure you want to delete this subcontractor? They will be moved to the recycle bin."
       />
     </div>
   )
