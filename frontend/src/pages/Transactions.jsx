@@ -30,6 +30,7 @@ export default function Transactions() {
   const [txToEdit, setTxToEdit] = useState(null)
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false)
   const [isPersonModalOpen, setIsPersonModalOpen] = useState(false)
+  const [isCreatingPerson, setIsCreatingPerson] = useState(false)
   const [txToDelete, setTxToDelete] = useState(null)
   const [txType, setTxType] = useState('Expense')
   const [txProject, setTxProject] = useState(projects[0]?.id || '')
@@ -408,19 +409,18 @@ export default function Transactions() {
             <textarea name="narration" rows="2" placeholder="Brief description of the transaction..." className="flex w-full rounded-md border border-slate-200 px-3 py-2 text-sm"></textarea>
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium">{txType === 'Income' ? 'Received From (Client)' : 'Paid To (Subcontractor/Supplier)'}</label>
-            {txType === 'Income' ? (
-              <>
-                <input type="text" readOnly value={selectedProjectDetails?.client || ''} className="flex h-10 w-full rounded-md border border-slate-200 px-3 text-sm bg-slate-50 cursor-not-allowed" />
-                <input type="hidden" name="party_id" value={clients.find(c => c.name === selectedProjectDetails?.client)?.id || ''} />
-              </>
-            ) : (
-              <select name="party_id" className="flex h-10 w-full rounded-md border border-slate-200 px-3 text-sm" onChange={(e) => { if (e.target.value === "CREATE_NEW") { setIsPersonModalOpen(true); e.target.value = ""; } }}>
-                <option value="">Select Person...</option>
-                {people.filter(p => p.role === 'SUBCONTRACTOR' || !p.company).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                <option value="CREATE_NEW" className="font-bold text-indigo-600">+ Create New Person</option>
-              </select>
-            )}
+            <label className="text-sm font-medium">{txType === 'Income' ? 'Received From (Client / Person)' : 'Paid To (Subcontractor / Supplier)'}</label>
+            <select 
+              name="party_id" 
+              key={`add-${txType}-${selectedProjectDetails?.client || ''}`}
+              defaultValue={txType === 'Income' ? (clients.find(c => c.name === selectedProjectDetails?.client)?.id || '') : ''}
+              className="flex h-10 w-full rounded-md border border-slate-200 px-3 text-sm" 
+              onChange={(e) => { if (e.target.value === "CREATE_NEW") { setIsPersonModalOpen(true); e.target.value = ""; } }}
+            >
+              <option value="">Select Person...</option>
+              {people.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+              <option value="CREATE_NEW" className="font-bold text-indigo-600">+ Create New Person</option>
+            </select>
           </div>
           <Button type="submit" className="w-full">Save Transaction</Button>
         </form>
@@ -484,19 +484,18 @@ export default function Transactions() {
               <textarea name="narration" rows="2" defaultValue={txToEdit.description || txToEdit.narration} placeholder="Brief description of the transaction..." className="flex w-full rounded-md border border-slate-200 px-3 py-2 text-sm"></textarea>
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">{txType === 'Income' ? 'Received From (Client)' : 'Paid To (Subcontractor/Supplier)'}</label>
-              {txType === 'Income' ? (
-                <>
-                  <input type="text" readOnly value={selectedProjectDetails?.client || ''} className="flex h-10 w-full rounded-md border border-slate-200 px-3 text-sm bg-slate-50 cursor-not-allowed" />
-                  <input type="hidden" name="party_id" value={clients.find(c => c.name === selectedProjectDetails?.client)?.id || ''} />
-                </>
-              ) : (
-                <select name="party_id" defaultValue={txToEdit.party_id} className="flex h-10 w-full rounded-md border border-slate-200 px-3 text-sm" onChange={(e) => { if (e.target.value === "CREATE_NEW") { setIsPersonModalOpen(true); e.target.value = ""; } }}>
-                  <option value="">Select Person...</option>
-                  {people.filter(p => p.role === 'SUBCONTRACTOR' || !p.company).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                  <option value="CREATE_NEW" className="font-bold text-indigo-600">+ Create New Person</option>
-                </select>
-              )}
+              <label className="text-sm font-medium">{txType === 'Income' ? 'Received From (Client / Person)' : 'Paid To (Subcontractor / Supplier)'}</label>
+              <select 
+                name="party_id" 
+                key={`edit-${txType}-${txToEdit.party_id || ''}`}
+                defaultValue={txToEdit.party_id || (txType === 'Income' ? (clients.find(c => c.name === selectedProjectDetails?.client)?.id || '') : '')}
+                className="flex h-10 w-full rounded-md border border-slate-200 px-3 text-sm" 
+                onChange={(e) => { if (e.target.value === "CREATE_NEW") { setIsPersonModalOpen(true); e.target.value = ""; } }}
+              >
+                <option value="">Select Person...</option>
+                {people.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                <option value="CREATE_NEW" className="font-bold text-indigo-600">+ Create New Person</option>
+              </select>
             </div>
             <Button type="submit" className="w-full">Save Changes</Button>
           </form>
@@ -538,15 +537,22 @@ export default function Transactions() {
       <Modal isOpen={isPersonModalOpen} onClose={() => setIsPersonModalOpen(false)} title="Create New Person">
         <form onSubmit={async (e) => {
           e.preventDefault();
-          const name = e.target.name.value;
-          await addPerson({ name, role: 'SUBCONTRACTOR', workAssigned: '', project: txProject });
-          setIsPersonModalOpen(false);
+          setIsCreatingPerson(true);
+          try {
+            const name = e.target.name.value;
+            await addPerson({ name, role: 'SUBCONTRACTOR', workAssigned: '', project: txProject });
+            setIsPersonModalOpen(false);
+          } finally {
+            setIsCreatingPerson(false);
+          }
         }} className="space-y-4">
           <div className="space-y-2">
             <label className="text-sm font-medium">Person / Company Name</label>
             <input name="name" required className="flex h-10 w-full rounded-md border border-slate-200 px-3 text-sm" />
           </div>
-          <Button type="submit" className="w-full">Create Person</Button>
+          <Button type="submit" disabled={isCreatingPerson} className="w-full">
+            {isCreatingPerson ? 'Creating...' : 'Create Person'}
+          </Button>
         </form>
       </Modal>
     </div>
