@@ -6,7 +6,6 @@ import { useAuth } from "../context/AuthContext"
 const navigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
   { name: 'Clients', href: '/clients', icon: Users },
-  { name: 'Subcontractors', href: '/subcontractors', icon: Users },
   { name: 'Projects', href: '/projects', icon: FolderKanban },
   { name: 'Transactions', href: '/transactions', icon: ArrowRightLeft },
   { 
@@ -22,6 +21,7 @@ const navigation = [
   { name: 'Profit & Loss', href: '/profit-and-loss', icon: TrendingUp },
   { name: 'Categories', href: '/categories', icon: Tags },
   { name: 'Letters', href: '/letters', icon: Mail },
+  { name: 'Subcontractors', href: '/subcontractors', icon: Users },
   { name: 'Progress Reports', href: '/progress-report', icon: Folder },
 ]
 
