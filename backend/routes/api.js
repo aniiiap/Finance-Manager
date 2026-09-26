@@ -127,7 +127,7 @@ router.post('/transactions', verifyToken, requireClient, requireModule('Transact
 router.put('/transactions/:id', verifyToken, verifyAdmin, requireClient, requireModule('Transactions'), async (req, res) => {
   try {
     const { id } = req.params;
-    const { amount, type, description, status } = req.body;
+    const { amount, type, description, status, project_id, category_id, party_id, paymentMethod, date } = req.body;
 
     if (req.user.role === 'USER') {
       const owned = await pool.query(
@@ -143,9 +143,11 @@ router.put('/transactions/:id', verifyToken, verifyAdmin, requireClient, require
 
     const result = await pool.query(
       `UPDATE transactions 
-       SET amount = $1, type = $2, narration = $3, status = $4
-       WHERE id = $5 AND company_id = $6 RETURNING *`,
-      [amount, type, description, status, id, req.user.company_id]
+       SET amount = $1, type = $2, narration = $3, status = $4,
+           project_id = $5, category_id = $6, person_id = $7,
+           payment_method = $8, date = $9
+       WHERE id = $10 AND company_id = $11 RETURNING *`,
+      [amount, type, description, status, project_id || null, category_id || null, party_id || null, paymentMethod, date, id, req.user.company_id]
     );
     res.json(result.rows[0]);
   } catch (err) {
